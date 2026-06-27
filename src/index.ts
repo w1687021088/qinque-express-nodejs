@@ -33,9 +33,7 @@ const server: Server = app.listen(PORT, () => {
 
 server.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EADDRINUSE') {
-    console.error(
-      `❌ Port ${PORT} is already in use. Try a different port with PORT=<number> npm run dev`,
-    );
+    console.error(`❌ Port ${PORT} is already in use. Try a different port with PORT=<number> npm run dev`);
     process.exit(1);
   }
   throw error;
