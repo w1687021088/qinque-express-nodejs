@@ -24,6 +24,7 @@ app.get('/health', (_request: Request, response: Response): void => {
  * @returns {void}
  */
 app.get('/', (_request: Request, response: Response): void => {
+  console.log(_request.params);
   response.json({ message: 'Welcome to your Express + TypeScript API!' });
 });
 

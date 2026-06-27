@@ -1,7 +1,7 @@
 {
   "name": "s3",
   "version": "1.0.0",
-  "description": "Express.js API with TypeScript",
+  "description": "练习 nodejs 项目",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "typescript",
     "api"
   ],
-  "author": "",
+  "author": "zjw",
   "license": "MIT",
   "dependencies": {
     "express": "^5.0.0",
