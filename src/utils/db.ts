@@ -1,0 +1,41 @@
+import mysql from 'mysql2/promise';
+import { appEnvConfig } from '@/env/index.js';
+
+const mysqlDB = appEnvConfig.mysqlDB;
+
+const pool = mysql.createPool({
+  host: mysqlDB.host,
+  user: mysqlDB.user,
+  port: mysqlDB.port,
+  password: mysqlDB.password,
+  database: mysqlDB.database,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+export default pool;
+
+console.log('DB_HOST:', mysqlDB.host);
+
+console.log('DB_USER:', mysqlDB.user);
+
+console.log('DB_PASSWORD:', mysqlDB.password ? '***' : '【空】');
+
+console.log('DB_DATABASE:', mysqlDB.database);
+
+// 🆕 新增：测试数据库连接的方法
+export async function testDatabaseConnection() {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping(); // 发送一个简单的心跳查询
+    connection.release();
+    console.log('✅ 数据库连接成功！');
+  } catch (error) {
+    console.error('❌ 数据库连接失败:', error);
+    // 这里可以选择退出进程，避免启动一个“残缺”的服务
+    process.exit(1);
+  }
+}
+
+export type DBExecuteRowData<T extends Record<string, any>> = Array<mysql.RowDataPacket & T>;

@@ -1,4 +1,6 @@
-export { APP_ENUMS } from './app/index.js';
+// src/enums/code/index.ts
+
+export { APP_ENUMS } from './code/index.js';
 
 /**
  * 环境变量
