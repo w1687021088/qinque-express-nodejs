@@ -23,7 +23,8 @@ export class UserController extends Controller {
   /**
    * 获取用户信息
    * */
-  apiInfo = async (req: unknown, res: Response) => {
+  apiInfo = async (req: Request, res: Response) => {
+    // console.log(req.user );
     const query = (req as unknown as UserQueryPlayer).query;
     const data = await this._userService.findById(query.username);
     if (!data) return this.fail(APP_ENUMS.User.USER_NOT_FOUND);

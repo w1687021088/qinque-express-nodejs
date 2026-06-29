@@ -1,6 +1,7 @@
 // src/utils/responseFormatter.ts
 import { Response } from 'express';
 import { APP_ENUMS } from '@/enums/index.js';
+import { HttpCodeEnum } from '@/enums/code/http-code.js';
 
 /**
  * 统一响应格式工具
@@ -10,7 +11,7 @@ export class ResponseFormatter {
   /**
    * 成功响应
    */
-  static success<T>(res: Response, data: T, message: string = 'success', statusCode: number = APP_ENUMS.Code.SUCCESS) {
+  static success<T>(res: Response, data: T, message: string = 'success', statusCode: number = HttpCodeEnum.OK) {
     return res.status(statusCode).json({
       code: APP_ENUMS.Code.SUCCESS,
       message,
@@ -23,12 +24,7 @@ export class ResponseFormatter {
   /**
    * 错误响应（由 errorHandler 调用）
    */
-  static error(
-    res: Response,
-    code: number,
-    message: string,
-    statusCode: number = APP_ENUMS.Code.INTERNAL_SERVER_ERROR
-  ) {
+  static error(res: Response, code: number, message: string, statusCode: number = HttpCodeEnum.OK) {
     return res.status(statusCode).json({
       code,
       message,

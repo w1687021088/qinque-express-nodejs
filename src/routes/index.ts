@@ -1,19 +1,26 @@
+// src/routes/index.ts
 import express from 'express';
+import { authMiddleware } from '@/middlewares/auth.js';
 import { configRoutes } from './config.js';
+import { publicConfigRoutes } from './publicConfig.js';
 
 const rootRouter = express.Router();
+const version = '/api/v1';
 
-/**
- * 创建路由
- * */
 export const createRouter = (app: express.Express) => {
+  // 1️⃣ 先挂载公开路由（不经过 JWT）
+  publicConfigRoutes.forEach(route => {
+    rootRouter.use(route.path, route.router);
+  });
+
+  // 2️⃣ 插入 JWT 中间件 → 后续所有路由都需要认证
+  rootRouter.use(authMiddleware);
+
+  // 3️⃣ 挂载受保护路由（需要 JWT）
   configRoutes.forEach(route => {
     rootRouter.use(route.path, route.router);
   });
 
   app.use(version, rootRouter);
-
   return app;
 };
-
-const version = '/api/v1';

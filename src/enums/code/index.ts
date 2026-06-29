@@ -1,20 +1,12 @@
 // src/enums/code/index.ts
 
-import { AppErrorCode, UserErrorCode } from './error-code.js';
+import { AppErrorCode, AuthErrorCode, UserErrorCode } from './error-code.js';
 
 enum AppCode {
   /**
    * Success
    */
-  SUCCESS = 200,
-  /**
-   * 404
-   */
-  NOT_FOUND = 404,
-  /**
-   * 500
-   */
-  INTERNAL_SERVER_ERROR = 500
+  SUCCESS = 200
 }
 
 export const APP_ENUMS = {
@@ -23,12 +15,19 @@ export const APP_ENUMS = {
   // App Code
   Code: AppCode,
   // User Error Code
-  User: UserErrorCode
+  User: UserErrorCode,
+  // Auth Error Code
+  Auth: AuthErrorCode
 };
 
 // ---------- 错误码 -> 默认消息映射 ----------
 export const ErrorMessages: Record<number, string> = {
-  [APP_ENUMS.error.TOKEN_EXPIRED]: 'Token 已过期，请重新登录',
+  // ---------- Auth ----------
+  [APP_ENUMS.Auth.INVALID_TOKEN]: '无效的 Token',
+  [APP_ENUMS.Auth.TOKEN_EXPIRED]: 'Token 已过期，请重新登录',
+  [APP_ENUMS.Auth.NOT_LOGGED_IN]: '未登录，请先登录',
+  [APP_ENUMS.Auth.AUTH_FAILED]: '认证失败',
+  // ---------- User ----------
   [APP_ENUMS.User.PARAM_VALIDATE_FAILED]: '参数校验失败',
   [APP_ENUMS.User.USER_NOT_FOUND]: '用户不存在'
 };

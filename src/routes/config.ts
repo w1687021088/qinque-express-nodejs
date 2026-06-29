@@ -1,3 +1,4 @@
+// src/routes/config.ts
 import { userRouter } from '@/modules/user/user.route.js';
 
 enum RouterPathEnum {

@@ -1,3 +1,4 @@
+// src/routes/create-routes.ts
 import express from 'express';
 
 // 路由配置类型

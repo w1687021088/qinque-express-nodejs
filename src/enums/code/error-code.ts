@@ -3,11 +3,28 @@
 /**
  * App Error Code
  */
-export enum AppErrorCode {
+export enum AppErrorCode {}
+
+/**
+ * Auth Error Code
+ * */
+export enum AuthErrorCode {
   /**
-   * token失效
+   * 未登录，请先登录
    */
-  TOKEN_EXPIRED = 10001
+  NOT_LOGGED_IN = 10001,
+  /**
+   * Token 已过期，请重新登录
+   */
+  TOKEN_EXPIRED = 10002,
+  /**
+   * 无效的 Token
+   */
+  INVALID_TOKEN = 10003,
+  /**
+   * 认证失败
+   */
+  AUTH_FAILED = 10004
 }
 
 /**
