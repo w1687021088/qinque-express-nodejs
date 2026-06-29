@@ -4,6 +4,7 @@ import { app } from './app.js';
 import { Server } from 'http';
 import { testDatabaseConnection } from '@/utils/db.js';
 import logger from '@/utils/logger.js';
+import { EnvEnums } from '@/enums/index.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -20,10 +21,11 @@ async function bootstrap() {
 
     // 2. 启动 HTTP 服务器
     const server: Server = app.listen(PORT, () => {
+      logger.info(`服务器正在运行...`);
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 环境: ${NODE_ENV}`);
       logger.info(`🔗 地址: http://localhost:${PORT}`);
-      if (NODE_ENV === 'development') {
+      if (NODE_ENV === EnvEnums.dev) {
         logger.info(`📚 API 文档: http://localhost:${PORT}/api-docs`);
       }
     });

@@ -1,11 +1,12 @@
 // src/env/index.ts
 import dotenv from 'dotenv';
 import path from 'node:path';
+import { EnvEnums } from '@/enums/index.js';
 
 // 获取当前环境（默认 dev）
-const NODE_ENV = process.env.NODE_ENV || 'dev';
+const NODE_ENV = process.env.NODE_ENV || EnvEnums.dev;
 
-const isDev = process.env.NODE_ENV === 'dev';
+const isDev = process.env.NODE_ENV === EnvEnums.dev;
 
 // 环境文件映射
 const envFiles: Record<string, string> = {
@@ -30,7 +31,7 @@ dotenv.config({ path: envPath });
 // 导出配置（带类型提示）
 export const appEnvConfig = {
   // 环境信息
-  env: process.env.NODE_ENV || 'dev',
+  env: process.env.NODE_ENV || EnvEnums.dev,
   appName: process.env.APP_NAME || 'MyApp',
 
   // 服务器配置
@@ -49,17 +50,8 @@ export const appEnvConfig = {
   // 日志级别
   logLevel: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
   // 辅助方法
-  isDev: process.env.NODE_ENV === 'dev',
-  isQa: process.env.NODE_ENV === 'qa',
-  isSit: process.env.NODE_ENV === 'sit',
-  isProd: process.env.NODE_ENV === 'prod'
+  isDev: process.env.NODE_ENV === EnvEnums.dev,
+  isQa: process.env.NODE_ENV === EnvEnums.qa,
+  isSit: process.env.NODE_ENV === EnvEnums.sit,
+  isProd: process.env.NODE_ENV === EnvEnums.prod
 };
-
-// 打印当前配置（调试用，生产环境建议关闭）
-if (appEnvConfig.isDev) {
-  console.log('======================================= Environment Config =======================================');
-  console.log(`Environment: ${appEnvConfig.env}`);
-  console.log(`Port: ${appEnvConfig.port}`);
-  console.log(`DB: ${appEnvConfig.mysqlDB.host}:${appEnvConfig.mysqlDB.port}/${appEnvConfig.mysqlDB.name}`);
-  console.log('====================================================================================================');
-}
