@@ -1,47 +1,80 @@
+// src/index.ts
 import './env/index.js';
 import { app } from './app.js';
 import { Server } from 'http';
 import { testDatabaseConnection } from '@/utils/db.js';
+import logger from '@/utils/logger.js';
 
 const PORT = Number(process.env.PORT) || 3000;
-
-// 🔥 在启动服务器之前，先检查数据库是否活着
-await testDatabaseConnection();
-
-// 启动服务器
-const server: Server = app.listen(PORT, () => {
-  console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
-});
-
-// 处理端口被占用的情况
-server.on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌端口${PORT}已被使用。尝试使用port =<number> npm run dev`);
-    process.exit(1);
-  }
-  throw error;
-});
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 /**
- * 当接收到终止信号时，优雅地关闭服务器。
- * @param {string} signal -接收到的终止信号
+ * 启动服务器前的初始化
  */
-function gracefulShutdown(signal: string): void {
-  console.log(`\n${signal} 收到。优雅地关闭…`);
-  server.close(() => {
-    console.log('服务器关闭。');
-    process.exit(0);
-  });
+async function bootstrap() {
+  try {
+    // 1. 测试数据库连接（如果失败，应用不应该启动）
+    logger.info('正在测试数据库连接...');
+    await testDatabaseConnection();
+    logger.info('数据库连接测试通过 ✅');
 
-  // 10秒后强制关闭
-  setTimeout(() => {
-    console.error('不能及时关闭连接，强行关闭');
+    // 2. 启动 HTTP 服务器
+    const server: Server = app.listen(PORT, () => {
+      logger.info(`🚀 服务器启动成功`);
+      logger.info(`📍 环境: ${NODE_ENV}`);
+      logger.info(`🔗 地址: http://localhost:${PORT}`);
+      if (NODE_ENV === 'development') {
+        logger.info(`📚 API 文档: http://localhost:${PORT}/api-docs`);
+      }
+    });
+
+    // 3. 端口冲突处理
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ 端口 ${PORT} 已被占用，请使用其他端口`);
+        process.exit(1);
+      } else {
+        logger.error('服务器启动失败:', error);
+        process.exit(1);
+      }
+    });
+
+    // 4. 优雅关闭
+    const gracefulShutdown = (signal: string) => {
+      logger.info(`\n收到 ${signal} 信号，开始优雅关闭...`);
+      server.close(() => {
+        logger.info('服务器已关闭，进程退出');
+        process.exit(0);
+      });
+
+      // 强制关闭超时保护（10 秒）
+      setTimeout(() => {
+        logger.error('强制关闭服务器（超时）');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+    // 5. 进程级异常捕获（兜底）
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('未处理的 Promise 拒绝:', { reason, promise });
+      // 生产环境可以优雅退出，但建议重启进程
+      // 这里只记录，不退出（可能某些拒绝是可恢复的）
+    });
+
+    process.on('uncaughtException', error => {
+      logger.error('未捕获的异常:', error);
+      // 对于未捕获的异常，建议退出进程（可能导致资源泄漏）
+      process.exit(1);
+    });
+  } catch (error) {
+    // 如果初始化（如数据库连接）失败，记录并退出
+    logger.error('应用启动失败:', error);
     process.exit(1);
-  }, 10000);
+  }
 }
 
-// 监听SIGINT和SIGTERM信号
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// 监听SIGTERM信号
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+// 执行引导函数
+bootstrap();

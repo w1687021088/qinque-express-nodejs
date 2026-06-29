@@ -11,13 +11,9 @@ export class UserService {
   async findById(name: string) {
     const [rows] = await db.execute<DBExecuteRowData<UserInfo>>('SELECT * FROM user WHERE name = ?', [name]);
     console.log(rows);
-    if (rows.length === 0) throw new Error('Database query failed');
+    // if (rows.length === 0) throw new Error('数据库查询失败');
     // 实际项目中这里会调用 Repository 或 ORM
-    return {
-      name: 'zjw',
-      age: 18,
-      email: 'zjw@example.com'
-    };
+    return rows?.[0];
   }
 
   async create(data: { name: string; age: number }) {

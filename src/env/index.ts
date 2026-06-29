@@ -1,8 +1,11 @@
+// src/env/index.ts
 import dotenv from 'dotenv';
 import path from 'node:path';
 
 // 获取当前环境（默认 dev）
 const NODE_ENV = process.env.NODE_ENV || 'dev';
+
+const isDev = process.env.NODE_ENV === 'dev';
 
 // 环境文件映射
 const envFiles: Record<string, string> = {
@@ -44,7 +47,7 @@ export const appEnvConfig = {
     name: process.env.DB_NAME || ''
   },
   // 日志级别
-  logLevel: process.env.LOG_LEVEL || 'info',
+  logLevel: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
   // 辅助方法
   isDev: process.env.NODE_ENV === 'dev',
   isQa: process.env.NODE_ENV === 'qa',

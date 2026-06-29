@@ -24,10 +24,10 @@ export class UserController extends Controller {
    * 获取用户信息
    * */
   apiInfo = async (req: unknown, res: Response) => {
-    this.fail(APP_ENUMS.User.USER_NOT_FOUND);
     const query = (req as unknown as UserQueryPlayer).query;
-    await this._userService.findById(query.username);
-    return this.success(res, { name: 'lyq' });
+    const data = await this._userService.findById(query.username);
+    if (!data) return this.fail(APP_ENUMS.User.USER_NOT_FOUND);
+    return this.success(res, data);
   };
 
   /**
