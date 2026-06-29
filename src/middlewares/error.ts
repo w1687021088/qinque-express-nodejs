@@ -6,7 +6,7 @@ import { APP_ENUMS } from '@/enums/index.js';
 import logger from '@/utils/logger.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
+export const errorHandlerMiddleware = (err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // 获取请求上下文（包含 url、method、query、body、ip 等）
   const context = req.context || {};
 
@@ -29,7 +29,7 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const notFoundHandler = (req: Request, res: Response, _next: NextFunction) => {
+export const notFoundHandlerMiddleware = (req: Request, res: Response, _next: NextFunction) => {
   // 404 也可以记录日志，方便统计未匹配的路由
   const context = req.context || {};
   logger.warn('[404 Not Found]', context);

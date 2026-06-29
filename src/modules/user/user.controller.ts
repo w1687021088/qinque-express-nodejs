@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import { Controller } from '@/utils/response.js';
 import { UserService } from './user.service.js';
-import { validate } from '@/middlewares/validate.js';
+import { validateMiddleware } from '@/middlewares/validate.js';
 import { Player } from '@/modules/user/user.schema.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import { UserQueryPlayer } from '@/modules/user/user.types.js';
@@ -18,7 +18,7 @@ export class UserController extends Controller {
   }
 
   // 静态方法，用于参数验证
-  static validateInfo = validate({ query: Player }, APP_ENUMS.User.PARAM_VALIDATE_FAILED);
+  static validateInfo = validateMiddleware({ query: Player }, APP_ENUMS.User.PARAM_VALIDATE_FAILED);
 
   /**
    * 获取用户信息

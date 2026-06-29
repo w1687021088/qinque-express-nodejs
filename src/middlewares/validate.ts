@@ -8,7 +8,7 @@ type Sources = {
   params?: ZodType;
 };
 
-export const validate = (schemas: Sources, code: number) => {
+export const validateMiddleware = (schemas: Sources, code: number) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (schemas.body) {
