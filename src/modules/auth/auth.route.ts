@@ -14,8 +14,8 @@ export const authRouter = createAppRoutes([
   },
   // 刷新token
   {
-    path: '/refreshToken',
-    method: 'post',
+    path: '/refresh',
+    method: 'get',
     handler: authController.refreshToken
   },
   // 注册

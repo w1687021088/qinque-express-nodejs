@@ -8,6 +8,7 @@ import { APP_ENUMS } from '@/enums/index.js';
 import bcrypt from 'bcrypt';
 import { generateSnowflake } from '@/utils/snowflake.js';
 import { createJWT } from '@/utils/token.js';
+import redisClient from '@/utils/redis.js';
 
 // 手机号+验证码，邮箱+密码，用户名+密码
 
@@ -90,5 +91,11 @@ export class AuthController extends Controller {
   /**
    * 刷新 token
    * */
-  refreshToken = async () => {};
+  refreshToken = async (req: Request, response: Response) => {
+    await redisClient.set('name', '小明');
+    console.log('✅ 已存储：name = 小明');
+    const result = await redisClient.get('name');
+    console.log('✅ 读取结果：name =', result);
+    return this.success(response, { token: 'new token' });
+  };
 }
