@@ -13,16 +13,18 @@ export const errorHandlerMiddleware = (err: unknown, req: Request, res: Response
   if (err instanceof BusinessError) {
     // 业务错误：记录 warn 级别日志，带上上下文
     logger[err.statusCode === HttpCodeEnum.INTERNAL_SERVER_ERROR ? 'error' : 'warn']('[业务错误]', {
-      ...context, // 展开上下文信息
-      stack: (err as Error)?.stack
+      stack: (err as Error)?.stack,
+      code: err?.code,
+      statusCode: err?.statusCode,
+      ...context // 展开上下文信息
     });
     return ResponseFormatter.error(res, err.code, err.message, err.statusCode || HttpCodeEnum.INTERNAL_SERVER_ERROR);
   }
 
   // 系统错误：记录 error 级别日志，带上完整上下文和堆栈
   logger.error(`[系统错误] ${(err as Error)?.message}`, {
-    ...context,
-    stack: (err as Error)?.stack
+    stack: (err as Error)?.stack,
+    ...context
   });
 
   return ResponseFormatter.error(res, HttpCodeEnum.INTERNAL_SERVER_ERROR, '服务器繁忙，请稍后再试');

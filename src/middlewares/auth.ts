@@ -5,7 +5,6 @@ import { BusinessError } from '@/utils/error.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import { HttpCodeEnum } from '@/enums/code/http-code.js';
 import { jwtConfig } from '@/config/jwtConfig.js';
-import logger from '@/utils/logger.js';
 
 /**
  * JWT 认证中间件
@@ -33,7 +32,7 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
     if (error instanceof jwt.TokenExpiredError) {
       return next(new BusinessError(APP_ENUMS.Auth.TOKEN_EXPIRED, null, HttpCodeEnum.UNAUTHORIZED));
     }
-    logger.error('JWT 校验异常', { error });
+    // logger.error('JWT 校验异常', { error });
     return next(new BusinessError(APP_ENUMS.Auth.AUTH_FAILED, null, HttpCodeEnum.UNAUTHORIZED));
   }
 };

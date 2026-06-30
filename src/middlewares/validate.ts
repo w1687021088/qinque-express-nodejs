@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodType, ZodError } from 'zod';
 import { BusinessError } from '@/utils/error.js';
+import { APP_ENUMS } from '@/enums/index.js';
 
 type Sources = {
   body?: ZodType;
@@ -8,7 +9,7 @@ type Sources = {
   params?: ZodType;
 };
 
-export const validateMiddleware = (schemas: Sources, code: number) => {
+export const validateMiddleware = (schemas: Sources, code: number = APP_ENUMS.Code.PARAM_VALIDATE_FAILED) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (schemas.body) {

@@ -6,7 +6,11 @@ enum AppCode {
   /**
    * Success
    */
-  SUCCESS = 200
+  SUCCESS = 200,
+  /**
+   * 参数不合法
+   */
+  PARAM_VALIDATE_FAILED = 20001
 }
 
 export const APP_ENUMS = {
@@ -27,7 +31,8 @@ export const ErrorMessages: Record<number, string> = {
   [APP_ENUMS.Auth.TOKEN_EXPIRED]: 'Token 已过期，请重新登录',
   [APP_ENUMS.Auth.NOT_LOGGED_IN]: '未登录，请先登录',
   [APP_ENUMS.Auth.AUTH_FAILED]: '认证失败',
+  [APP_ENUMS.Auth.PHONE_EXISTS]: '手机号已存在',
   // ---------- User ----------
-  [APP_ENUMS.User.PARAM_VALIDATE_FAILED]: '参数校验失败',
+  [APP_ENUMS.Code.PARAM_VALIDATE_FAILED]: '参数校验失败',
   [APP_ENUMS.User.USER_NOT_FOUND]: '用户不存在'
 };

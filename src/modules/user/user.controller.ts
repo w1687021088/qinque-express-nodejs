@@ -18,7 +18,7 @@ export class UserController extends Controller {
   }
 
   // 静态方法，用于参数验证
-  static validateInfo = validateMiddleware({ query: Player }, APP_ENUMS.User.PARAM_VALIDATE_FAILED);
+  static validateInfo = validateMiddleware({ query: Player });
 
   /**
    * 获取用户信息

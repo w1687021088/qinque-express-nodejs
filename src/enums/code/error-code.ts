@@ -24,17 +24,17 @@ export enum AuthErrorCode {
   /**
    * 认证失败
    */
-  AUTH_FAILED = 10004
+  AUTH_FAILED = 10004,
+  /**
+   * 手机号已存在
+   */
+  PHONE_EXISTS = 10005
 }
 
 /**
  * User Error Code
  */
 export enum UserErrorCode {
-  /**
-   * 参数不合法
-   */
-  PARAM_VALIDATE_FAILED = 20001,
   /**
    * 用户不存在
    */
