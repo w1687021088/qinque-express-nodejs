@@ -3,62 +3,92 @@ import { Controller } from '@/utils/response.js';
 import { AuthService } from './auth.service.js';
 import { Request, Response } from 'express';
 import { validateMiddleware } from '@/middlewares/validate.js';
-import { AuthRegisterBody, authRegisterSchema } from '@/modules/auth/auth.schema.js';
+import { AuthLoginBody, authLoginSchema, AuthRegisterBody, authRegisterSchema } from '@/modules/auth/auth.schema.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import bcrypt from 'bcrypt';
 import { generateSnowflake } from '@/utils/snowflake.js';
+import { createJWT } from '@/utils/token.js';
 
 // 手机号+验证码，邮箱+密码，用户名+密码
 
 export class AuthController extends Controller {
   // 服务实例
   private readonly _service = new AuthService();
-  // 注册参数验证
+  // 校验手机号是否已存在
+  private _queryUserExists = async (phone: string) => {
+    return this._service.queryUserExists(phone);
+  };
+  // 创建 token
+  private _createToken = (userId: string) => {
+    return createJWT(userId);
+  };
+  /**
+   * 注册参数验证
+   * */
   static validateRegister = validateMiddleware({ body: authRegisterSchema });
   /**
-   * 验证码
+   * 登录参数验证
    * */
-  verificationCode = async (req: Request, res: Response) => {
-    // const { email } = req.body;
-    // return this._service.verificationCode(email);
-  };
+  static validateLogin = validateMiddleware({ body: authLoginSchema });
+
   /**
    * 登录
+   * 手机号+密码
    * */
-  login = async (req: Request, res: Response) => {
-    // const { username, password } = req.body;
-    // return this._service.login(username, password);
-    // return 'auth controller';
+  login = async (req: Request, response: Response) => {
+    const body = req.body as AuthLoginBody;
+    const data = await this._service.queryUserInfo(body.phone);
 
-    const data = { message: 'auth controller' };
-    return this.success(res, data);
+    // 如果用户不存在
+    if (!data) {
+      return this.fail(APP_ENUMS.Auth.USER_NOT_FOUND_PHONE);
+    }
+    const { password, ...result } = data;
+
+    // 验证密码
+    const isPasswordValid = await bcrypt.compare(body.password, password);
+    if (!isPasswordValid) {
+      return this.fail(APP_ENUMS.Auth.PASSWORD_ERROR);
+    }
+
+    // 生成 token
+    const token = this._createToken(result.userId);
+
+    return this.success(response, { ...result, token });
   };
-
-  /**
-   * 刷新 token
-   * */
-  refreshToken = async () => {};
-
   /**
    * 注册
    * */
   register = async (req: Request, response: Response) => {
-    const body = req.body as AuthRegisterBody;
+    const { password, phone } = req.body as AuthRegisterBody;
+
     // 查询用户是否存在
-    const isExists = await this._service.queryUserExists(body.phone);
+    const isExists = await this._queryUserExists(phone);
+
     // 如果用户存在
     if (isExists) {
       return this.fail(APP_ENUMS.Auth.PHONE_EXISTS);
     }
     // 密码加密
-    const hashedPassword = await bcrypt.hash(body.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // 生成用户ID
     const userId = generateSnowflake();
 
     // 存储用户
-    const result = await this._service.createUser(userId, body.phone, hashedPassword);
+    const result = await this._service.createUser(userId, phone, hashedPassword);
 
-    return this.success(response, result);
+    // 生成 token
+    const token = this._createToken(result.userId);
+
+    return this.success(response, { ...result, token });
   };
+  /**
+   * 登出
+   * */
+  logout = async () => {};
+  /**
+   * 刷新 token
+   * */
+  refreshToken = async () => {};
 }

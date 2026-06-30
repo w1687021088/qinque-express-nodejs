@@ -26,9 +26,17 @@ export enum AuthErrorCode {
    */
   AUTH_FAILED = 10004,
   /**
-   * 手机号已存在
+   * 该用户已注册
    */
-  PHONE_EXISTS = 10005
+  PHONE_EXISTS = 10005,
+  /**
+   * 用户不存在
+   */
+  USER_NOT_FOUND_PHONE = 10006,
+  /**
+   * 登录密码错误
+   */
+  PASSWORD_ERROR = 10007
 }
 
 /**

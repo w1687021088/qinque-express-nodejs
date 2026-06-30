@@ -10,7 +10,7 @@ type Sources = {
 };
 
 export const validateMiddleware = (schemas: Sources, code: number = APP_ENUMS.Code.PARAM_VALIDATE_FAILED) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, _: Response, next: NextFunction) => {
     try {
       if (schemas.body) {
         const parsed = await schemas.body.parseAsync(req.body);

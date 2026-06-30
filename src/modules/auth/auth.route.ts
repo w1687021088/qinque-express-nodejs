@@ -9,7 +9,8 @@ export const authRouter = createAppRoutes([
   {
     path: '/login',
     method: 'post',
-    handler: authController.login
+    handler: authController.login,
+    middlewares: [AuthController.validateLogin]
   },
   // 刷新token
   {
@@ -23,5 +24,11 @@ export const authRouter = createAppRoutes([
     method: 'post',
     handler: authController.register,
     middlewares: [AuthController.validateRegister]
+  },
+  // 登出
+  {
+    path: '/logout',
+    method: 'post',
+    handler: authController.logout
   }
 ]);

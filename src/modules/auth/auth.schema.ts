@@ -1,6 +1,7 @@
 // src/modules/auth/auth.schema.ts
 import { z } from 'zod';
 
+// 注册
 export const authRegisterSchema = z
   .object({
     phone: z
@@ -28,4 +29,22 @@ export const authRegisterSchema = z
     path: ['confirmPassword'] // 错误会关联到 confirmPassword 字段
   });
 
+// 登录
+export const authLoginSchema = z.object({
+  phone: z
+    .string({
+      error: '手机号不能为空'
+    })
+    .regex(/^1[3-9]\d{9}$/, {
+      message: '请输入有效的手机号码'
+    }),
+  password: z.string({
+    error: '密码不能为空'
+  })
+});
+
+// 注册参数类型
 export type AuthRegisterBody = z.infer<typeof authRegisterSchema>;
+
+// 登录参数类型
+export type AuthLoginBody = z.infer<typeof authLoginSchema>;

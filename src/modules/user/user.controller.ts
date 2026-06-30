@@ -35,7 +35,7 @@ export class UserController extends Controller {
    * 创建用户
    * */
   apiAdded = async (req: Request, res: Response) => {
-    console.log(req);
+    // console.log(req);
     return this.success(res, { name: 'zjw' });
   };
 }
