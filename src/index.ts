@@ -5,6 +5,7 @@ import { Server } from 'http';
 import { testDatabaseConnection } from '@/utils/db.js';
 import logger from '@/utils/logger.js';
 import { EnvEnums } from '@/enums/index.js';
+import { connectRedis } from '@/utils/redis.js';
 
 const PORT = Number(process.env.PORT) || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -14,12 +15,17 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
  */
 async function bootstrap() {
   try {
-    // 1. 测试数据库连接（如果失败，应用不应该启动）
+    // 1. 测试数据库连接（失败则退出）
     logger.info('正在测试数据库连接...');
     await testDatabaseConnection();
     logger.info('数据库连接测试通过 ✅');
 
-    // 2. 启动 HTTP 服务器
+    // 2. 连接 Redis（失败则退出）
+    logger.info('正在连接 Redis...');
+    await connectRedis();
+    logger.info('Redis 连接成功 ✅');
+
+    // 3. 启动 HTTP 服务器
     const server: Server = app.listen(PORT, () => {
       logger.info(`服务器正在运行...`);
       logger.info(`🚀 服务器启动成功`);
@@ -30,7 +36,7 @@ async function bootstrap() {
       }
     });
 
-    // 3. 端口冲突处理
+    // 4. 端口冲突处理
     server.on('error', (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
         logger.error(`❌ 端口 ${PORT} 已被占用，请使用其他端口`);
@@ -41,7 +47,7 @@ async function bootstrap() {
       }
     });
 
-    // 4. 优雅关闭
+    // 5. 优雅关闭
     const gracefulShutdown = (signal: string) => {
       logger.info(`\n收到 ${signal} 信号，开始优雅关闭...`);
       server.close(() => {
@@ -59,7 +65,7 @@ async function bootstrap() {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-    // 5. 进程级异常捕获（兜底）
+    // 6. 进程级异常捕获（兜底）
     process.on('unhandledRejection', (reason, promise) => {
       logger.error('未处理的 Promise 拒绝:', { reason, promise });
       // 生产环境可以优雅退出，但建议重启进程
@@ -72,7 +78,7 @@ async function bootstrap() {
       process.exit(1);
     });
   } catch (error) {
-    // 如果初始化（如数据库连接）失败，记录并退出
+    // 如果初始化（如数据库或 Redis 连接）失败，记录并退出
     logger.error('应用启动失败:', error);
     process.exit(1);
   }
