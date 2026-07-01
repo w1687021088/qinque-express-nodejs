@@ -7,8 +7,8 @@ import { AuthLoginBody, authLoginSchema, AuthRegisterBody, authRegisterSchema } 
 import { APP_ENUMS } from '@/enums/index.js';
 import bcrypt from 'bcrypt';
 import { generateSnowflake } from '@/utils/snowflake.js';
-import { createJWT } from '@/utils/token.js';
 import redisClient from '@/utils/redis.js';
+import { jwtConfig } from '@/config/jwtConfig.js';
 
 // 手机号+验证码，邮箱+密码，用户名+密码
 
@@ -21,7 +21,7 @@ export class AuthController extends Controller {
   };
   // 创建 token
   private _createToken = (userId: string) => {
-    return createJWT(userId);
+    return jwtConfig.sign({ userId });
   };
   /**
    * 注册参数验证
@@ -35,9 +35,11 @@ export class AuthController extends Controller {
   /**
    * 登录
    * 手机号+密码
+   * @param request - 请求对象
+   * @param response - 响应对象
    * */
-  login = async (req: Request, response: Response) => {
-    const body = req.body as AuthLoginBody;
+  login = async (request: Request, response: Response) => {
+    const body = request.body as AuthLoginBody;
     const data = await this._service.queryUserInfo(body.phone);
 
     // 如果用户不存在
@@ -59,26 +61,24 @@ export class AuthController extends Controller {
   };
   /**
    * 注册
+   * @param request - 请求对象
+   * @param response - 响应对象
    * */
-  register = async (req: Request, response: Response) => {
-    const { password, phone } = req.body as AuthRegisterBody;
+  register = async (request: Request, response: Response) => {
+    const { password, phone } = request.body as AuthRegisterBody;
 
     // 查询用户是否存在
     const isExists = await this._queryUserExists(phone);
-
     // 如果用户存在
     if (isExists) {
       return this.fail(APP_ENUMS.Auth.PHONE_EXISTS);
     }
     // 密码加密
     const hashedPassword = await bcrypt.hash(password, 10);
-
     // 生成用户ID
     const userId = generateSnowflake();
-
     // 存储用户
     const result = await this._service.createUser(userId, phone, hashedPassword);
-
     // 生成 token
     const token = this._createToken(result.userId);
 
@@ -86,12 +86,16 @@ export class AuthController extends Controller {
   };
   /**
    * 登出
+   * @param request - 请求对象
+   * @param response - 响应对象
    * */
   logout = async () => {};
   /**
    * 刷新 token
+   * @param request - 请求对象
+   * @param response - 响应对象
    * */
-  refreshToken = async (req: Request, response: Response) => {
+  refreshToken = async (request: Request, response: Response) => {
     await redisClient.set('name', '小明');
     console.log('✅ 已存储：name = 小明');
     const result = await redisClient.get('name');
