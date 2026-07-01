@@ -32,3 +32,25 @@ export async function testDatabaseConnection() {
 }
 
 export type DBExecuteRowData<T extends Record<string, any>> = Array<mysql.RowDataPacket & T>;
+
+// // 用户表
+// const tables = {
+//   user: 'dake_users',
+//   article: 'dake_articles'
+// } as const;
+//
+// type TableKey = keyof typeof tables;
+// export class DB {
+//   select = (tableKey: TableKey, column: string[], where?: any[]) => {
+//     let s = 'SELECT ';
+//     for (let i = 0; i < column.length; i++) {
+//       s += column[i];
+//       if (i < column.length - 1) {
+//         s += ', ';
+//       }
+//     }
+//     const sql = s + ' FROM ' + tables[tableKey]; // + where 的逻辑
+//
+//     return sql;
+//   };
+// }

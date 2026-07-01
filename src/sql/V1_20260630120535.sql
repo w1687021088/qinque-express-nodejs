@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS dake_users
     phone      VARCHAR(20)           NOT NULL COMMENT '手机号',
     nickname   VARCHAR(50)           NULL     DEFAULT NULL COMMENT '昵称',
     avatar     VARCHAR(500)          NULL     DEFAULT NULL COMMENT '头像URL',
+    status     TINYINT UNSIGNED      NOT NULL DEFAULT 1 COMMENT '状态：1正常，0禁用',
 
     -- 4. 角色字段（位掩码，多选）
     role_mask  TINYINT UNSIGNED      NOT NULL DEFAULT 1 COMMENT '角色掩码：1达人，2机构，4选品团（组合相加，如3=达人+机构）',
@@ -67,9 +68,7 @@ CREATE TABLE IF NOT EXISTS dake_users
 -- 添加主键
 -- ALTER TABLE dake_user_info ADD PRIMARY KEY (id) COMMENT '主键';
 
-SELECT *
-FROM dake_users
-where role_mask = 1;
+-- EXPLAIN  SELECT * FROM dake_users where role_mask = 1;
 
 
 

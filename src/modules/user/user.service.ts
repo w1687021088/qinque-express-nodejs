@@ -10,7 +10,7 @@ export class UserService {
   // 模拟数据库查询
   async findById(name: string) {
     const [rows] = await db.execute<DBExecuteRowData<UserInfo>>(
-      'SELECT * FROM node_data_01.dake_users WHERE name = ?',
+      'SELECT * FROM node_data_01.dake_users WHERE username = ?',
       [name]
     );
     console.log(rows);
