@@ -15,3 +15,8 @@ export class BusinessError extends Error {
     Object.setPrototypeOf(this, BusinessError.prototype);
   }
 }
+
+// 创建一个业务错误对象
+export const rejectError = (code: number, message?: string | null, statusCode: number = HttpCodeEnum.OK) => {
+  return new BusinessError(code, message, statusCode);
+};

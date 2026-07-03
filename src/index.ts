@@ -5,7 +5,8 @@ import { Server } from 'http';
 import { testDatabaseConnection } from '@/utils/db.js';
 import logger from '@/utils/logger.js';
 import { EnvEnums } from '@/enums/index.js';
-import { connectRedis, disconnectRedis } from '@/utils/redis.js'; // 引入 disconnectRedis
+import { connectRedis, disconnectRedis } from '@/utils/redis.js';
+import { getLocalIP } from '@/utils/network.js'; // 引入 disconnectRedis
 
 const PORT = Number(process.env.PORT) || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -30,7 +31,10 @@ async function bootstrap() {
       logger.info(`服务器正在运行...`);
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 环境: ${NODE_ENV}`);
-      logger.info(`🔗 地址: http://localhost:${PORT}`);
+      // 开发环境显示本机 IP，否则显示 localhost
+      const host = NODE_ENV === EnvEnums.dev ? getLocalIP() : 'localhost';
+      logger.info(`🔗 地址: http://${host}:${PORT}`);
+
       if (NODE_ENV === EnvEnums.dev) {
         logger.info(`📚 API 文档: http://localhost:${PORT}/api-docs`);
       }

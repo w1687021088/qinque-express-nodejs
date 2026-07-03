@@ -60,6 +60,22 @@ export class AuthController extends Controller {
     return this.success(response, { ...result, token });
   };
   /**
+   * 删除用户
+   * @param request - 请求对象
+   * @param response - 响应对象
+   * */
+  delete = async (request: Request, response: Response) => {
+    const userId = request.user?.userId;
+
+    if (!userId) {
+      return this.fail(APP_ENUMS.Auth.DELETE_USER_FAILED);
+    }
+
+    await this._service.deleteUser(userId);
+
+    return this.success(response, { message: '删除成功' });
+  };
+  /**
    * 注册
    * @param request - 请求对象
    * @param response - 响应对象
@@ -69,6 +85,7 @@ export class AuthController extends Controller {
 
     // 查询用户是否存在
     const isExists = await this._queryUserExists(phone);
+
     // 如果用户存在
     if (isExists) {
       return this.fail(APP_ENUMS.Auth.PHONE_EXISTS);
@@ -77,6 +94,7 @@ export class AuthController extends Controller {
     const hashedPassword = await bcrypt.hash(password, 10);
     // 生成用户ID
     const userId = generateSnowflake();
+
     // 存储用户
     const result = await this._service.createUser(userId, phone, hashedPassword);
     // 生成 token

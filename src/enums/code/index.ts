@@ -31,9 +31,11 @@ export const ErrorMessages: Record<number, string> = {
   [APP_ENUMS.Auth.TOKEN_EXPIRED]: 'Token 已过期，请重新登录',
   [APP_ENUMS.Auth.NOT_LOGGED_IN]: '未登录，请先登录',
   [APP_ENUMS.Auth.AUTH_FAILED]: '认证失败',
-  [APP_ENUMS.Auth.PHONE_EXISTS]: '该用户已注册',
+  [APP_ENUMS.Auth.PHONE_EXISTS]: '该手机号码已被注册',
   [APP_ENUMS.Auth.USER_NOT_FOUND_PHONE]: '用户不存在',
   [APP_ENUMS.Auth.PASSWORD_ERROR]: '登录密码错误',
+  [APP_ENUMS.Auth.USER_NOT_FOUND]: '用户出错',
+  [APP_ENUMS.Auth.DELETE_USER_FAILED]: '删除用户失败',
   // ---------- User ----------
   [APP_ENUMS.Code.PARAM_VALIDATE_FAILED]: '参数校验失败',
   [APP_ENUMS.User.USER_NOT_FOUND]: '用户不存在'

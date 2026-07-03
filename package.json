@@ -26,6 +26,7 @@
     "@sapphire/snowflake": "^3.5.5",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
+    "dayjs": "^1.11.21",
     "express": "^5.0.0",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",

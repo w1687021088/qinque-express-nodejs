@@ -4,13 +4,17 @@ import mysql from 'mysql2/promise';
 import { AuthUserInfo, AuthUserWithPassword } from '@/modules/auth/auth.types.js';
 
 export class AuthService {
+  deleteUser = async (userId: string) => {
+    const sql = 'UPDATE node_data_01.dake_users SET deleted_at=NOW() WHERE user_id=?';
+    await pool.execute(sql, [userId]);
+  };
   /**
    * 查询用户信息
    * @param phone
    */
   queryUserInfo = async (phone: string) => {
     const sql =
-      'SELECT user_id AS userId, username, phone, password, created_at AS createdAt FROM node_data_01.dake_users WHERE phone=? LIMIT 1';
+      'SELECT user_id AS userId, username, phone, password, created_at AS createdAt FROM node_data_01.dake_users WHERE phone=? AND deleted_at IS NULL LIMIT 1';
 
     // 查询用户信息
     const [rows] = await pool.execute<DBExecuteRowData<AuthUserWithPassword>>(sql, [phone]);
@@ -34,7 +38,7 @@ export class AuthService {
    * @param phone
    */
   queryUserExists = async (phone: string) => {
-    const sql = 'SELECT phone FROM node_data_01.dake_users WHERE phone=? LIMIT 1';
+    const sql = 'SELECT phone FROM node_data_01.dake_users WHERE phone=? AND deleted_at IS NULL LIMIT 1';
 
     const [rows] = await pool.execute<DBExecuteRowData<{ phone: string }>>(sql, [phone]);
     return !!rows?.[0]?.phone;
@@ -50,7 +54,7 @@ export class AuthService {
     const sql = 'INSERT INTO node_data_01.dake_users (user_id, username, password, phone) VALUES (?, ?, ?, ?)';
 
     // 设置用户名(默认)
-    const username = `用户${phone}`;
+    const username = `用户${phone}_${userId}`;
 
     // 插入用户数据
     const [create_rows] = await pool.execute(sql, [userId, username, password, phone]);

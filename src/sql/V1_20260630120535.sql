@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS dake_users
     nickname   VARCHAR(50)           NULL     DEFAULT NULL COMMENT '昵称',
     avatar     VARCHAR(500)          NULL     DEFAULT NULL COMMENT '头像URL',
     status     TINYINT UNSIGNED      NOT NULL DEFAULT 1 COMMENT '状态：1正常，0禁用',
+    deleted_at DATETIME                       DEFAULT NULL COMMENT '删除时间',
 
     -- 4. 角色字段（位掩码，多选）
     role_mask  TINYINT UNSIGNED      NOT NULL DEFAULT 1 COMMENT '角色掩码：1达人，2机构，4选品团（组合相加，如3=达人+机构）',
@@ -34,43 +35,14 @@ CREATE TABLE IF NOT EXISTS dake_users
 
     -- 6. 约束与索引
     PRIMARY KEY (id) COMMENT '主键',
-    UNIQUE KEY uk_user_id (user_id) COMMENT '业务ID唯一',
-    UNIQUE KEY uk_username (username) COMMENT '用户名唯一',
-    UNIQUE KEY uk_email (email) COMMENT '邮箱唯一',
-    UNIQUE KEY uk_phone (phone) COMMENT '手机号唯一',
+    UNIQUE INDEX uk_user_id (user_id) COMMENT '业务ID唯一',
+    UNIQUE INDEX uk_username (username) COMMENT '用户名唯一',
+    UNIQUE INDEX uk_email (email) COMMENT '邮箱唯一',
+    UNIQUE INDEX uk_phone_deleted_at (phone, deleted_at) COMMENT '手机号唯一: 通过手机号查询记得带上 deleted_at IS NULL',
     INDEX idx_role_mask (role_mask) COMMENT '角色索引',
     INDEX idx_created_at (created_at) COMMENT '时间查询索引'
 
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci COMMENT = 'dake用户表（支持多角色位掩码）';
-
--- 2. 初始化角色数据（仅作注释说明，无需插入，因为角色已经通过位掩码定义）
--- 角色值说明：1=达人，2=机构，4=选品团
-
--- 3. 插入超级管理员（如需要）
--- INSERT INTO dake_users (user_id, username, password, phone, nickname, role_mask)
--- VALUES ('admin_snowflake_id', 'admin', 'hashed_password', '13800138000', '超级管理员', 7);
-
--- 4. 验证表结构
-# SHOW CREATE TABLE dake_users;
-
-
--- ALTER TABLE dake_users MODIFY COLUMN email VARCHAR(100) NULL DEFAULT NULL COMMENT '邮箱';
-
--- ALTER TABLE dake_users MODIFY COLUMN phone VARCHAR(20) NULL DEFAULT NULL COMMENT '手机号';
--- dake用户信息表索引
--- ALTER TABLE dake_user_info ADD INDEX idx_user_id (user_id) COMMENT '用户ID索引';
-
--- 添加用户ID索引
--- ALTER TABLE dake_user_info ADD UNIQUE KEY uk_user_id (user_id) COMMENT '业务ID唯一';
-
--- 添加主键
--- ALTER TABLE dake_user_info ADD PRIMARY KEY (id) COMMENT '主键';
-
--- EXPLAIN  SELECT * FROM dake_users where role_mask = 1;
-
-
-
-
 

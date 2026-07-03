@@ -1,6 +1,7 @@
 // src/modules/auth/auth.route.ts
 import { createAppRoutes } from '@/routes/create-routes.js';
 import { AuthController } from './auth.controller.js';
+import { authMiddleware } from '@/middlewares/auth.js';
 
 const authController = new AuthController();
 
@@ -24,6 +25,13 @@ export const authRouter = createAppRoutes([
     method: 'post',
     handler: authController.register,
     middlewares: [AuthController.validateRegister]
+  },
+  // 删除
+  {
+    path: '/delete',
+    method: 'post',
+    handler: authController.delete,
+    middlewares: [authMiddleware]
   },
   // 登出
   {
