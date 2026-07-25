@@ -32,11 +32,18 @@ dotenv.config({ path: envPath });
 export const appEnvConfig = {
   // 环境信息
   env: process.env.NODE_ENV || EnvEnums.dev,
+
   appName: process.env.APP_NAME || 'MyApp',
 
   // 服务器配置
   port: parseInt(process.env.PORT || '3000', 10),
   apiUrl: process.env.API_URL || '',
+
+  // redis
+  redis: {
+    host: process.env.REDIS_HOST || '',
+    port: parseInt(process.env.REDIS_PORT || '3306', 10)
+  },
 
   // 数据库配置
   mysqlDB: {
@@ -47,11 +54,13 @@ export const appEnvConfig = {
     database: process.env.DB_NAME || '',
     name: process.env.DB_NAME || ''
   },
+
   // 日志级别
   logLevel: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+
   // 辅助方法
   isDev: process.env.NODE_ENV === EnvEnums.dev,
   isQa: process.env.NODE_ENV === EnvEnums.qa,
   isSit: process.env.NODE_ENV === EnvEnums.sit,
   isProd: process.env.NODE_ENV === EnvEnums.prod
-};
+} as const;

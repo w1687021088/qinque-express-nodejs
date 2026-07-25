@@ -1,9 +1,10 @@
 // src/utils/redis.ts
 import redis from 'redis';
 import logger from './logger.js';
+import { appEnvConfig } from '@/env/index.js';
 
 const redisClient = redis.createClient({
-  url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`
+  url: `redis://${appEnvConfig.redis.host}:${appEnvConfig.redis.port}`
 });
 
 // 监听错误事件
