@@ -1,5 +1,6 @@
 // src/routes/config.ts
 import { userRouter } from '@/modules/user/user.route.js';
+import { AppRoutes } from '@/routes/create-routes.js';
 
 enum RouterPathEnum {
   /**
@@ -8,9 +9,10 @@ enum RouterPathEnum {
   USER = '/user'
 }
 
-export const configRoutes = [
+export const configRoutes: AppRoutes = [
   {
     path: RouterPathEnum.USER,
-    router: userRouter
+    config: userRouter,
+    description: '用户模块'
   }
 ];

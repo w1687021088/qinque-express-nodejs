@@ -3,7 +3,7 @@ import { Controller } from '@/utils/response.js';
 import { AuthService } from './auth.service.js';
 import { Request, Response } from 'express';
 import { validateMiddleware } from '@/middlewares/validate.js';
-import { AuthLoginBody, authLoginSchema, AuthRegisterBody, authRegisterSchema } from '@/modules/auth/auth.schema.js';
+import { AuthLoginBody, AuthRegisterBody, authSchemas } from '@/modules/auth/auth.schema.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import bcrypt from 'bcrypt';
 import { generateSnowflake } from '@/utils/snowflake.js';
@@ -26,11 +26,15 @@ export class AuthController extends Controller {
   /**
    * 注册参数验证
    * */
-  static validateRegister = validateMiddleware({ body: authRegisterSchema });
+  static validateRegister = validateMiddleware({ body: authSchemas.body.register });
   /**
    * 登录参数验证
    * */
-  static validateLogin = validateMiddleware({ body: authLoginSchema });
+  static validateLogin = validateMiddleware({ body: authSchemas.body.login });
+  /**
+   * 删除
+   * */
+  static validateDelete = validateMiddleware({ params: authSchemas.params.delete });
 
   /**
    * 登录
@@ -88,7 +92,7 @@ export class AuthController extends Controller {
 
     // 如果用户存在
     if (isExists) {
-      return this.fail(APP_ENUMS.Auth.PHONE_EXISTS);
+      this.fail(APP_ENUMS.Auth.PHONE_EXISTS);
     }
     // 密码加密
     const hashedPassword = await bcrypt.hash(password, 10);

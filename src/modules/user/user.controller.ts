@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { Controller } from '@/utils/response.js';
 import { UserService } from './user.service.js';
 import { validateMiddleware } from '@/middlewares/validate.js';
-import { Player } from '@/modules/user/user.schema.js';
+import { userSchemas } from '@/modules/user/user.schema.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import { UserQueryPlayer } from '@/modules/user/user.types.js';
 
@@ -18,7 +18,7 @@ export class UserController extends Controller {
   }
 
   // 静态方法，用于参数验证
-  static validateInfo = validateMiddleware({ query: Player });
+  static validateInfo = validateMiddleware({ query: userSchemas.query.info });
 
   /**
    * 获取用户信息
@@ -29,13 +29,5 @@ export class UserController extends Controller {
     const data = await this._userService.findById(query.username);
     if (!data) return this.fail(APP_ENUMS.User.USER_NOT_FOUND);
     return this.success(res, data);
-  };
-
-  /**
-   * 创建用户
-   * */
-  apiAdded = async (req: Request, res: Response) => {
-    // console.log(req);
-    return this.success(res, { name: 'zjw' });
   };
 }
