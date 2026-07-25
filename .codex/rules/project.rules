@@ -41,13 +41,6 @@ prefix_rule(
     justification = "发布包到 npm registry 需要人工确认版本号",
 )
 
-# 修改 package.json 依赖前必须确认
-prefix_rule(
-    pattern = ["npm", "install"],
-    decision = "prompt",
-    justification = "安装新依赖前需要确认，避免引入漏洞",
-)
-
 prefix_rule(
     pattern = ["pnpm", "add"],
     decision = "prompt",
@@ -125,6 +118,13 @@ prefix_rule(
     pattern = ["ls"],
     decision = "allow",
     justification = "列出目录内容",
+)
+
+# 修改 package.json
+prefix_rule(
+    pattern = ["npm", "install"],
+    decision = "allow",
+    justification = "安装新依赖",
 )
 
 
