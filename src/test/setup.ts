@@ -1,0 +1,14 @@
+/** 为路由集成测试提供不含真实凭据的最小运行配置。 */
+process.env.NODE_ENV = 'dev';
+process.env.APP_NAME = 's3-test';
+process.env.PORT = '3000';
+process.env.API_URL = 'http://localhost:3000';
+process.env.LOG_LEVEL = 'error';
+process.env.SWAGGER_ENABLED = 'true';
+process.env.JWT_SECRET = 'test-access-secret-must-have-at-least-32-characters';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-must-have-at-least-32-characters';
+process.env.JWT_EXPIRES_IN = '1h';
+process.env.JWT_REFRESH_EXPIRES_IN = '30d';
+process.env.SNOWFLAKE_EPOCH = '2026-01-05T00:00:00.000Z';
+process.env.REDIS_HOST = '127.0.0.1';
+process.env.REDIS_PORT = '6379';
