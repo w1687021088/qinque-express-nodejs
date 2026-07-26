@@ -1,225 +1,150 @@
-import { z } from 'zod';
-import swaggerUi from 'swagger-ui-express';
-import { AppRoutes } from '@/routes/createRoutes.js';
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { z } from 'zod';
+import { appEnvConfig } from '@/env/index.js';
+import { AppRoutes, RouteAccess, RouterDoc } from '@/routes/createRoutes.js';
 
-/**
- * Swagger 配置
- * */
+/** Swagger 配置 */
 export const SWAGGER_PATH = '/api-docs';
-
-/**
- * Swagger 服务器地址
- * */
-export const SWAGGER_SERVER_URL = 'http://localhost:3000';
-
-/**
- * Swagger 标题
- * */
+/** Swagger 服务器地址 */
+export const SWAGGER_SERVER_URL = appEnvConfig.apiUrl || `http://localhost:${appEnvConfig.port}`;
+/** Swagger 标题 */
 export const SWAGGER_TITLE = 'API Docs';
-
-/**
- * Swagger OpenAPI 规范版本
- * */
-
+/** Swagger OpenAPI 规范版本 */
 export const SWAGGER_OPEN_API_VERSION = '3.0.0';
-
-/**
- * Swagger 描述
- * */
+/** Swagger 描述 */
 export const SWAGGER_DESCRIPTION = 'API Documentation';
 
-type SwaggerPath = {
-  /**
-   * 请求方法
-   * */
-  summary: string;
-  /**
-   * 请求参数
-   * */
-  requestBody?: RequestBody;
-  /**
-   * 请求参数
-   * */
-  parameters?: Parameters;
-  /**
-   * 响应结果
-   * */
-  responses?: Record<string, Responses>;
-};
+/** Zod 转换后的标准 JSON Schema，交由 swagger-ui 原样消费。 */
+type SwaggerSchema = unknown;
 
-type Parameters = Array<{
-  /**
-   * 参数名称
-   * */
+type SwaggerParameter = {
   name: string;
-  /**
-   * 参数位置
-   * */
   in: 'path' | 'query' | 'header';
-  /**
-   * 是否必填
-   * */
   required?: boolean;
-  /**
-   * 参数类型
-   * */
-  schema: any;
-  /**
-   * 参数描述
-   * */
+  schema: SwaggerSchema;
   description?: string;
-}>;
-
-type RequestBody = {
-  /**
-   * 是否必填
-   * */
-  required?: boolean;
-  /**
-   * 请求体内容
-   * */
-  content?: Record<string, { schema: ReturnType<typeof createBodySchema> }>;
 };
 
-type Responses = {
-  /**
-   * 响应状态码
-   * */
+type SwaggerResponse = {
   description: string;
-  /**
-   * 响应内容
-   * */
-  content: Record<string, { schema: ReturnType<typeof createResultSchema> }>;
+  content: Record<string, { schema: SwaggerSchema }>;
 };
 
-type Tag = {
-  name: string;
-  description: string;
-};
-
-export type SwaggerPaths = {
-  [path: string]: {
-    [method: string]: SwaggerPath | string[];
+type SwaggerPath = {
+  tags: string[];
+  summary: string;
+  requestBody?: {
+    required: boolean;
+    content: Record<string, { schema: SwaggerSchema }>;
   };
+  parameters: SwaggerParameter[];
+  responses: Record<string, SwaggerResponse>;
+  security?: Array<Record<string, string[]>>;
 };
 
-/**
- * 将 Zod Schema 转换为 Swagger 参数
- * @param schema
- * @param location
- * @returns
- */
-const zodToParams = (schema: z.ZodObject<any>, location: 'path' | 'query' | 'header' = 'query'): any[] => {
-  const shape = schema.shape || {};
-  return Object.entries(shape).map(([name, zodSchema]) => {
+export type SwaggerPaths = Record<string, Record<string, SwaggerPath>>;
+
+/** 将 Zod 对象转换为 OpenAPI 参数。 */
+const zodToParams = (schema: z.ZodObject, location: 'path' | 'query' | 'header' = 'query'): SwaggerParameter[] => {
+  return Object.entries(schema.shape).map(([name, zodSchema]) => {
     const isOptional = zodSchema instanceof z.ZodOptional;
-    // 如果是可选类型，取内部的 schema
-    const inner = isOptional ? (zodSchema as any)._def?.innerType || zodSchema : zodSchema;
+    const innerSchema = isOptional ? zodSchema.unwrap() : zodSchema;
+
     return {
       name,
       in: location,
-      required: !isOptional,
-      schema: z.toJSONSchema(inner), // 直接用 Zod 内置方法
-      description: (zodSchema as any).description || ''
+      required: location === 'path' || !isOptional,
+      schema: z.toJSONSchema(innerSchema),
+      description: zodSchema.description || ''
     };
   });
 };
 
-/**
- * 创建 Swagger 文档
- * @param version 版本
- * @param paths 路径
- * @param tags 标签 用于分组
- * @returns
- */
-const createSwaggerDocument = (version: string, paths?: SwaggerPaths, tags: Array<Tag> = []) => ({
+const createResponseSchema = (dataSchema: z.ZodType) =>
+  z.toJSONSchema(
+    z.object({
+      code: z.number().describe('状态码'),
+      message: z.string().describe('提示信息'),
+      data: dataSchema,
+      requestId: z.string().describe('请求 ID'),
+      timestamp: z.number().describe('时间戳')
+    })
+  );
+
+const createErrorResponse = (description: string): SwaggerResponse => ({
+  description,
+  content: { 'application/json': { schema: createResponseSchema(z.null()) } }
+});
+
+const createResponses = (doc: RouterDoc, access: RouteAccess): Record<string, SwaggerResponse> => {
+  const responses: Record<string, SwaggerResponse> = {
+    '200': {
+      description: doc.schemas?.description || '请求成功',
+      content: {
+        'application/json': { schema: createResponseSchema(doc.schemas?.result || z.unknown()) }
+      }
+    },
+    '400': createErrorResponse('请求参数不合法'),
+    '500': createErrorResponse('服务器内部错误')
+  };
+
+  if (access === 'authenticated') {
+    responses['401'] = createErrorResponse('认证失败或登录状态已过期');
+  }
+
+  return responses;
+};
+
+const createSwaggerDocument = (
+  version: string,
+  paths: SwaggerPaths,
+  tags: Array<{ name: string; description: string }>
+) => ({
   openapi: SWAGGER_OPEN_API_VERSION,
   info: {
     title: SWAGGER_TITLE,
     version: '1.0.0',
     description: SWAGGER_DESCRIPTION
   },
-  servers: [{ url: `${SWAGGER_SERVER_URL + version}` }],
+  servers: [{ url: `${SWAGGER_SERVER_URL}${version}` }],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+      }
+    }
+  },
   tags,
-  paths: paths ?? {}
+  paths
 });
 
-/**
- * 创建请求体 schema
- * @param bodySchema
- * @returns
- */
-const createBodySchema = (bodySchema: z.ZodObject) => z.toJSONSchema(bodySchema);
-
-/**
- * 创建结果 schema
- * @param dataSchema 数据 schema
- * @returns
- */
-const createResultSchema = (dataSchema: z.ZodObject) =>
-  z.toJSONSchema(
-    z.object({
-      code: z.number().describe('状态码'),
-      message: z.string().describe('提示信息'),
-      data: dataSchema,
-      requestId: z.string().describe('请求ID'),
-      timestamp: z.number().describe('时间戳')
-    })
-  );
-
-/**
- * 创建 Swagger 配置
- * @param app 应用
- * @param version 版本
- * @param all 所有路由
- * @returns
- */
+/** 根据路由元数据生成并挂载 Swagger 文档。 */
 export const createSwaggerConfig = (app: express.Express, version: string, all: AppRoutes) => {
   const paths: SwaggerPaths = {};
 
-  all.forEach(item => {
-    const { path, config } = item;
-
-    const docs = config.docs;
-    docs.forEach(doc => {
-      const apiPath = path + doc.path;
-
-      if (!paths[apiPath]) {
-        paths[apiPath] = {};
-      }
-
-      const pathNode = paths[apiPath] as any;
-
-      // 构建参数
-      const pathParameters = doc?.schemas?.params ? zodToParams(doc.schemas.params, 'path') : [];
-      const queryParameters = doc?.schemas?.query ? zodToParams(doc.schemas.query, 'query') : [];
-      const parameters = [...pathParameters, ...queryParameters];
-
-      // 请求体
-      const requestBody = doc?.schemas?.body
-        ? {
-            required: true,
-            content: { 'application/json': { schema: createBodySchema(doc.schemas.body) } }
-          }
-        : undefined;
-
-      // 响应，默认 200
-      const responses = doc?.schemas?.result
-        ? {
-            '200': {
-              description: doc?.schemas?.description || '请求成功',
-              content: { 'application/json': { schema: createResultSchema(doc?.schemas?.result || z.object({})) } }
-            }
-          }
-        : undefined;
+  all.forEach(({ path, config }) => {
+    config.docs.forEach(doc => {
+      const apiPath = `${path}${doc.path}`;
+      const access = doc.access ?? 'authenticated';
+      const pathNode = paths[apiPath] || (paths[apiPath] = {});
+      const pathParameters = doc.schemas?.params ? zodToParams(doc.schemas.params, 'path') : [];
+      const queryParameters = doc.schemas?.query ? zodToParams(doc.schemas.query, 'query') : [];
 
       pathNode[doc.method] = {
-        tags: [path.replace('/', '')], // ✅ 放在这里
-        summary: doc?.schemas?.summary || '请求接口',
-        requestBody,
-        parameters,
-        responses
+        tags: [path.replace('/', '')],
+        summary: doc.schemas?.summary || '请求接口',
+        requestBody: doc.schemas?.body
+          ? {
+              required: true,
+              content: { 'application/json': { schema: z.toJSONSchema(doc.schemas.body) } }
+            }
+          : undefined,
+        parameters: [...pathParameters, ...queryParameters],
+        responses: createResponses(doc, access),
+        security: access === 'authenticated' ? [{ bearerAuth: [] }] : []
       };
     });
   });
@@ -231,6 +156,5 @@ export const createSwaggerConfig = (app: express.Express, version: string, all: 
   );
 
   app.use(SWAGGER_PATH, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
   return app;
 };

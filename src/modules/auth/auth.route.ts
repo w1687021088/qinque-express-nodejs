@@ -1,7 +1,6 @@
 // src/modules/auth/auth.route.ts
 import { createAppRoutes } from '@/routes/createRoutes.js';
 import { AuthController } from './auth.controller.js';
-import { authMiddleware } from '@/middlewares/auth.js';
 import { authSchemas } from '@/modules/auth/auth.schema.js';
 
 const authController = new AuthController();
@@ -11,6 +10,7 @@ export const authRouter = createAppRoutes([
   {
     path: '/login',
     method: 'post',
+    access: 'public',
     handler: authController.login,
     middlewares: [AuthController.validateLogin],
     schemas: {
@@ -34,6 +34,7 @@ export const authRouter = createAppRoutes([
   {
     path: '/register',
     method: 'post',
+    access: 'public',
     handler: authController.register,
     middlewares: [AuthController.validateRegister],
     schemas: {
@@ -48,7 +49,7 @@ export const authRouter = createAppRoutes([
     path: '/delete/:userId',
     method: 'delete',
     handler: authController.delete,
-    middlewares: [authMiddleware, AuthController.validateDelete],
+    middlewares: [AuthController.validateDelete],
     schemas: {
       description: '删除成功',
       summary: '删除用户',
@@ -61,7 +62,6 @@ export const authRouter = createAppRoutes([
     path: '/logout',
     method: 'post',
     handler: authController.logout,
-    middlewares: [authMiddleware],
     schemas: {
       description: '用户登出成功',
       summary: '用户登出'

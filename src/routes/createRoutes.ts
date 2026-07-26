@@ -1,6 +1,10 @@
 // src/routes/create-routes.ts
 import express from 'express';
 import { z } from 'zod';
+import { authMiddleware } from '@/middlewares/auth.js';
+
+export type RouteAccess = 'public' | 'authenticated';
+export type RouteMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
 type Schema = {
   /**
@@ -22,7 +26,7 @@ type Schema = {
    * 路径参数验证，同时用于 swagger 文档生成
    * @type {z.ZodObject}
    * */
-  body?: z.ZodObject;
+  body?: z.ZodType;
   /**
    * 查询参数验证，同时用于 swagger 文档生成; 用于动态路由
    * @type {z.ZodObject}
@@ -37,23 +41,20 @@ type Schema = {
    * 响应结果验证，同时用于 swagger 文档生成
    * @type {z.ZodObject}
    * */
-  result?: z.ZodObject;
+  result?: z.ZodType;
 };
 
 /**
  * 路由文档类型
  * */
 
-type RouterDoc = Omit<RouterConfig, 'handler' | 'middlewares'>;
-
-// 中间件类型
-type middleware = (req: express.Request, res: express.Response, next: express.NextFunction) => unknown;
+export type RouterDoc = Omit<RouterConfig, 'handler' | 'middlewares'>;
 
 /**
  * 路由配置类型
  * */
 
-type RouteConfig = {
+export type RouteConfig = {
   /**
    * 路由
    * */
@@ -67,7 +68,7 @@ type RouteConfig = {
 /**
  * 路由配置类型
  * */
-type Routes = {
+export type AppRoute = {
   /**
    * 路由配置
    * */
@@ -93,7 +94,11 @@ export type RouterConfig = {
   /**
    * 请求方法
    * */
-  method: 'get' | 'post' | 'put' | 'delete';
+  method: RouteMethod;
+  /**
+   * 访问策略。默认要求登录，公开接口必须显式声明。
+   */
+  access?: RouteAccess;
   /**
    * 中间件
    * */
@@ -101,7 +106,7 @@ export type RouterConfig = {
   /**
    * 处理函数
    * */
-  handler: (req: express.Request, res: express.Response) => void;
+  handler: express.RequestHandler;
   /**
    * 数据验证模式
    * */
@@ -117,24 +122,27 @@ export type RouterDocsApi = Array<RouterDoc>;
 /**
  * 应用路由类型
  * */
-export type AppRoutes = Array<Routes>;
+export type AppRoutes = Array<AppRoute>;
 
 // 创建应用路由
-export function createAppRoutes(routerConfigs: RouterConfig[], middleware?: middleware[]): RouteConfig {
+export function createAppRoutes(
+  routerConfigs: RouterConfig[],
+  middlewares: express.RequestHandler[] = []
+): RouteConfig {
   // 创建路由
   const router = express.Router();
 
   // 使用中间件
-  if (middleware?.length) {
-    middleware.forEach(m => router.use(m));
+  if (middlewares.length) {
+    middlewares.forEach(middleware => router.use(middleware));
   }
 
   const docs: RouterDocsApi = [];
 
   // 创建路由
   routerConfigs.forEach(config => {
-    // 中间件
-    const handlers = config.middlewares || [];
+    const access = config.access ?? 'authenticated';
+    const handlers = [...(access === 'authenticated' ? [authMiddleware] : []), ...(config.middlewares || [])];
     // 将 handler 作为最后一个中间件加入执行链
     router[config.method](config.path, ...handlers, config.handler);
 

@@ -1,5 +1,5 @@
-import { Player } from './user.schema.js';
 import { ReqQuery } from '@/types/request.js';
 import { z } from 'zod';
+import { userSchemas } from './user.schema.js';
 
-export type UserQueryPlayer = ReqQuery<z.infer<typeof Player>>;
+export type UserQueryPlayer = ReqQuery<z.infer<typeof userSchemas.query.info>>;

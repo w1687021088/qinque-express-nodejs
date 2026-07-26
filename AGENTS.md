@@ -1,29 +1,110 @@
 # Repository Guidelines
 
-## 项目结构与模块组织
+## 项目定位与架构原则
 
-本项目是基于 Express 5 的 TypeScript API 服务。应用入口为 `src/index.ts`，Express 组合与全局中间件位于 `src/app.ts`。按职责组织代码：`src/modules/<feature>/` 放置功能模块的 `*.route.ts`、`*.controller.ts`、`*.service.ts`、`*.schema.ts` 与 `*.types.ts`；`src/routes/` 负责 `/api/v1` 下的公开和鉴权路由注册；`src/middlewares/`、`src/utils/`、`src/config/` 分别放共享中间件、基础设施工具和配置。数据库变更 SQL 放在 `src/sql/`，编译产物输出到 `dist/`，不得手动修改。
+本项目是基于 Express 5、TypeScript（NodeNext）的 HTTP API 服务。当前及后续演进采用**模块化单体**：按业务能力拆分模块，模块内部保持清晰分层；在确有独立部署、独立数据边界或独立扩缩容需求前，不引入微服务。
 
-## 构建、检查与本地开发
+架构优先级如下：
 
-- `npm ci`：按锁定版本安装依赖，适合干净环境和 CI。
-- `npm run dev`：以 `NODE_ENV=dev` 监听并运行 `src/index.ts`。
-- `npm run build`：使用 TypeScript 编译到 `dist/`。
-- `npm start`：运行已构建的 `dist/index.js`。
-- `npm run type-check`：仅执行严格类型检查。
+1. 边界清晰：HTTP、业务规则、数据访问和基础设施职责分离。
+2. 依赖单向：外层可以依赖内层，业务模块不得反向依赖路由、Express 或其他模块的内部实现。
+3. 模块自治：跨模块只能调用对方明确导出的服务/契约，不能导入对方私有文件或直接访问其数据表。
+4. 先保持一致再抽象：复用稳定且跨模块通用的能力；仅服务单一业务的代码留在模块内。
+5. 渐进式演进：存量实现无需为统一风格而大规模重写；修改某个模块时，将受影响部分迁移到本规范。新增代码必须遵守目标结构。
+
+## 目录、边界与依赖规则
+
+```text
+src/
+  app.ts                    # HTTP 应用组装：中间件、路由、错误处理
+  index.ts                  # 进程入口：配置加载、依赖初始化、HTTP 服务与退出
+  modules/<feature>/        # 以业务能力为边界的模块
+    <feature>.route.ts      # 路由声明、请求校验和控制器编排
+    <feature>.controller.ts # HTTP 适配：输入/输出、状态码、调用应用服务
+    <feature>.service.ts    # 应用服务与业务用例，不依赖 Express
+    <feature>.repository.ts # 数据读写与 SQL 映射（新建或改造的数据访问放此处）
+    <feature>.schema.ts     # Zod 请求/响应契约及推导类型
+    <feature>.types.ts      # 模块领域类型；不要放 Express 类型
+  routes/                   # API 版本、公开/受保护路由的模块注册
+  middlewares/              # 纯 HTTP 横切能力：鉴权、校验、错误处理、追踪等
+  config/                   # 配置对象、第三方适配配置和生命周期编排
+  env/                      # 环境变量加载与校验；不提交真实凭据
+  infrastructure/           # 新增共享技术实现的优先位置（DB、Redis、消息、外部客户端）
+  shared/                   # 仅限稳定、无业务语义的共享类型/函数（按需新增）
+  utils/                    # 仅保留通用技术工具；不得成为业务代码的兜底目录
+  sql/                      # 按版本顺序执行的不可变数据库迁移
+```
+
+- `app.ts` 只负责组装，不放业务规则、数据库调用或进程退出逻辑；`index.ts` 只负责启动和关闭生命周期。
+- `*.route.ts` 只声明路径、HTTP 方法、中间件、schema 与 controller handler，不写业务判断。
+- controller 只完成 HTTP 到应用服务的转换；不得拼接 SQL、调用 Redis，或承载可复用业务规则。
+- service 负责事务边界、授权后的业务规则和用例编排；不得导入 `express` 的 `Request`、`Response` 或 `NextFunction`。
+- repository 是唯一允许出现模块 SQL 的位置，负责参数化查询、持久化模型与领域/应用模型的映射。存量 service 内的 SQL 可在相关模块改动时逐步迁移；新增 SQL 不应继续写入 controller 或 service。
+- `routes/` 只聚合模块公开导出的 router，不得导入 controller/service/repository。
+- 模块之间禁止相对路径穿透导入（例如 `../auth/auth.service`）；使用模块公开入口，或将真正通用的契约下沉到 `shared/`。
+- 不在模块中硬编码数据库名、环境地址、密钥、超时或连接数；统一由环境配置和基础设施层提供。
+- 禁止循环依赖。发现共享逻辑时，优先提取无业务语义的接口或适配器，不要让两个模块互相导入。
+
+## API、错误与安全边界
+
+- 所有 API 挂载在 `/api/v1`；破坏性接口变更必须新开版本或提供明确兼容期。
+- 每个外部输入（`body`、`query`、`params`）必须使用 Zod 和 `validateMiddleware` 校验。schema 是接口契约的单一来源，同时用于 Swagger 文档。
+- 保持统一响应信封：`code`、`message`、`data`、`requestId`、`timestamp`。不要在 controller 中直接拼装不同结构的 JSON。
+- 业务预期失败抛出 `BusinessError`，由全局错误中间件转换；未知异常不得泄漏堆栈、SQL 或凭据。
+- HTTP 状态码必须反映语义，不能以 `200` 承载认证失败、参数错误、资源不存在或服务器错误。新增错误码需集中定义、稳定且可文档化。
+- 身份认证、授权、限流、CORS、安全头、请求 ID 与日志属于中间件职责。公开路由必须显式登记；受保护路由默认经认证中间件。
+- 密码、token、授权头、cookie、完整请求体及敏感个人信息不得写入日志或错误响应。日志应始终携带 requestId，但不得通过修改全局 logger 元数据实现请求级上下文。
+- Swagger 文档仅在允许的环境暴露；接口新增或修改时同步更新 schema、摘要和响应契约。
+
+## 配置、基础设施与生命周期
+
+- `src/env/` 只加载并校验环境变量；新增必填变量时提供脱敏的 `.env.example`，不提交真实 `.env.*` 凭据。
+- 环境配置在启动时一次性解析、类型化并校验；业务模块通过配置/客户端依赖使用它，不直接散读 `process.env`。
+- MySQL、Redis 等客户端由基础设施层集中创建，必须配置超时、错误监听和关闭方法。启动失败应向上抛给入口统一处理，不要在工具模块内 `process.exit()`。
+- 启动顺序为：加载并校验配置 → 初始化基础设施 → 启动 HTTP 服务。关闭顺序为：停止接收新请求 → 等待或超时关闭 HTTP 连接 → 关闭 Redis、数据库等依赖 → 退出进程。
+- 外部调用、数据库访问和连接关闭均应有可观测日志与合理超时；不得在请求路径中创建连接池或客户端。
+
+## 数据库与迁移
+
+- 数据库结构变更只能新增 `src/sql/V<版本>__<描述>.sql` 迁移文件；已进入任意共享环境的迁移不得修改或重命名。
+- 每个迁移应尽量可重复执行或明确前置条件，并包含必要索引、约束、字符集和回滚说明（复杂变更可在同目录补充说明文件）。
+- 所有 SQL 必须使用参数绑定，禁止字符串拼接用户输入。查询只选择所需列，不使用 `SELECT *`；对分页、排序和软删除条件建立一致约定。
+- 事务由 service 开启并控制边界，repository 接收事务连接/执行器，不自行决定跨仓储事务。
+- 对外暴露业务 ID，不泄漏自增内部主键、密码散列或仅限内部使用的字段。
+
+## TypeScript、编码与文档规范
+
+- 使用严格 TypeScript，优先显式领域类型、Zod 推导类型和泛型；禁止新增无理由的 `any`、双重断言或静默吞错。
+- 使用 `@/` 指向 `src/`；NodeNext 导入保留 `.js` 后缀。变量、函数、类型和文件名遵循现有英文命名规则；注释和文档使用简体中文。
+- Prettier 采用两空格、单引号、分号、120 字符行宽、无尾随逗号。不要手动修改 `dist/`。
+- 对外导出的 service 方法、复杂授权规则、事务、缓存策略及非显然设计决策应补充简体中文注释；注释解释“为什么”，不重复代码字面含义。
+- 新增依赖前评估维护状态、Node 版本兼容性、安全性和替代方案；基础设施类依赖需说明引入目的及关闭策略。
+
+## 开发、验证与交付
+
+- `npm ci`：按锁文件安装依赖。
+- `npm run dev`：以开发环境监听运行。
+- `npm run type-check`：严格类型检查。
 - `npm run lint` / `npm run lint:fix`：检查或修复 ESLint 问题。
 - `npm run format:check` / `npm run format`：检查或写入 Prettier 格式。
+- `npm run build`：编译到 `dist/`；`npm start`：运行编译产物。
+- 当前尚未配置自动化测试。涉及业务规则、鉴权、错误处理、repository 查询或中间件变更时，应优先补充模块附近的单元/集成测试，并在 `package.json` 中提供可重复执行的测试脚本。
+- 每次提交前至少运行与改动相称的验证；通常为 `npm run type-check`、`npm run lint`、`npm run format:check` 和 `npm run build`。若因环境依赖无法运行，必须在交付说明中写明原因。
 
-启动前在 `src/env/` 配置对应的 `.env.dev`、`.env.qa`、`.env.sit` 或 `.env.prod`，并提供 MySQL、Redis 与 `JWT_SECRET`。真实凭据不得提交。
+## 提交与评审要求
 
-## 编码风格与命名
+- 使用 Conventional Commits：`feat(auth): 增加刷新 token 接口`、`fix(env): 修复配置校验`、`refactor(user): 引入用户仓储`。可用类型为 `feat`、`fix`、`refactor`、`test`、`docs`、`style`、`chore`。
+- 一个提交聚焦一个可审阅目的；不混入无关格式化、依赖升级或迁移重写。
+- PR/变更说明必须包含：架构或接口影响、迁移与配置变化、兼容性/回滚策略、已执行验证命令。涉及接口行为变更时附请求示例或 Swagger 截图。
+- 评审优先检查模块边界、依赖方向、错误与安全语义、事务与迁移安全、可观测性及测试覆盖，而非业务实现的微观写法。
 
-使用 TypeScript 严格模式和 `@/` 指向 `src/` 的路径别名；NodeNext 导入须保留 `.js` 后缀。Prettier 规定两空格缩进、单引号、分号、120 字符行宽和无尾随逗号。文件以职责后缀命名，例如 `auth.service.ts`；类使用 PascalCase，函数、变量和路由字段使用 camelCase。新增输入参数应以 Zod schema 配合 `validateMiddleware` 验证，路由通过 `createAppRoutes` 声明。
+## 后续架构演进清单
 
-## 测试指南
+按风险和收益逐步推进，不作为一次性重构要求：
 
-当前未配置测试框架或 `npm test` 脚本。提交前至少运行 `npm run type-check`、`npm run lint` 与 `npm run build`；新增测试时，将其置于对应模块附近，并在 `package.json` 中补充可重复执行的测试脚本。
-
-## 提交与合并请求
-
-提交历史采用 Conventional Commits，如 `feat(auth): 增加刷新 token 接口`、`fix(env): 修复配置`。使用 `feat`、`fix`、`refactor`、`style` 或 `chore`，scope 对应模块。PR 应说明变更和验证命令，关联相关 Issue；接口行为、响应或安全配置变更需附请求示例或截图，并避免混入无关格式化。
+1. 将 `utils/db.ts`、`utils/redis.ts` 迁至明确的基础设施边界，并补齐 MySQL 与 Redis 的关闭、超时和健康检查能力。
+2. 迁移模块内存量 SQL 至 repository，统一软删除、字段映射、分页和事务约定。
+3. 将环境变量定义为 Zod 配置 schema，启动时快速失败并提供 `.env.example`。
+4. 采用 `AsyncLocalStorage` 或等价机制传递 requestId，移除对全局 logger 默认元数据的请求级写入。
+5. 明确错误码与 HTTP 状态码映射，补充认证、校验、404、500 的集成测试。
+6. 为迁移执行建立 CI 或部署流水线，记录已执行版本，避免手工漂移。

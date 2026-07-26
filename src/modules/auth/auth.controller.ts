@@ -117,7 +117,7 @@ export class AuthController extends Controller {
    * @param request - 请求对象
    * @param response - 响应对象
    * */
-  refreshToken = async (request: Request, response: Response) => {
+  refreshToken = async () => {
     // await redisClient.set('name', '小明');
     // console.log('✅ 已存储：name = 小明');
     // const result = await redisClient.get('name');
