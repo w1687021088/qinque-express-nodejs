@@ -36,5 +36,5 @@ export const notFoundHandlerMiddleware = (req: Request, res: Response, _next: Ne
   const context = req.context || {};
   logger.warn('[404 Not Found]', context);
 
-  return ResponseFormatter.error(res, HttpCodeEnum.UNAUTHORIZED, 'Not Found', HttpCodeEnum.NOT_FOUND);
+  return ResponseFormatter.error(res, HttpCodeEnum.NOT_FOUND, 'Not Found', HttpCodeEnum.NOT_FOUND);
 };

@@ -1,25 +1,23 @@
 import jwt from 'jsonwebtoken';
+import { appEnvConfig } from '@/env/index.js';
 
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+export type AccessTokenPayload = { userId: string };
+export type RefreshTokenPayload = AccessTokenPayload & { tokenId: string };
 
-// JWT 验证
-const verify = (token: string) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not set');
-  }
-  return jwt.verify(token, secret) as { userId: string };
-};
-
-// JWT 签名
-const sign = (payload: { userId: string }) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not set');
-  }
-  return jwt.sign(payload, secret, {
-    expiresIn: JWT_EXPIRES_IN
+const signAccessToken = (payload: AccessTokenPayload) =>
+  jwt.sign(payload, appEnvConfig.jwt.secret, {
+    expiresIn: appEnvConfig.jwt.expiresIn
   } as jwt.SignOptions);
-};
 
-export const jwtConfig = { verify, sign };
+const verifyAccessToken = (token: string) => jwt.verify(token, appEnvConfig.jwt.secret) as AccessTokenPayload;
+
+const signRefreshToken = (payload: RefreshTokenPayload) =>
+  jwt.sign(payload, appEnvConfig.jwt.refreshSecret, {
+    expiresIn: appEnvConfig.jwt.refreshExpiresIn,
+    audience: 'refresh'
+  } as jwt.SignOptions);
+
+const verifyRefreshToken = (token: string) =>
+  jwt.verify(token, appEnvConfig.jwt.refreshSecret, { audience: 'refresh' }) as RefreshTokenPayload;
+
+export const jwtConfig = { signAccessToken, verifyAccessToken, signRefreshToken, verifyRefreshToken };

@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 export const authSchemas = {
   body: {
+    refresh: z.object({
+      refreshToken: z.string({ error: '刷新令牌不能为空' }).min(1, '刷新令牌不能为空')
+    }),
     // 注册
     register: z
       .object({
@@ -58,19 +61,25 @@ export const authSchemas = {
     })
   },
   result: {
+    refresh: z.object({
+      token: z.string().describe('访问令牌'),
+      refreshToken: z.string().describe('刷新令牌')
+    }),
     register: z.object({
       userId: z.string().describe('用户ID'),
       username: z.string().describe('用户名'),
       phone: z.string().describe('手机号'),
       createdTime: z.number().describe('创建时间'),
-      token: z.string().describe('token')
+      token: z.string().describe('访问令牌'),
+      refreshToken: z.string().describe('刷新令牌')
     }),
     login: z.object({
       userId: z.string().describe('用户ID'),
       username: z.string().describe('用户名'),
       phone: z.string().describe('手机号'),
       createdTime: z.number().describe('创建时间'),
-      token: z.string().describe('token')
+      token: z.string().describe('访问令牌'),
+      refreshToken: z.string().describe('刷新令牌')
     }),
     delete: z.object({
       userId: z.string().describe('被删除的用户ID'),
@@ -84,3 +93,4 @@ export type AuthRegisterBody = z.infer<typeof authSchemas.body.register>;
 
 // 登录参数类型
 export type AuthLoginBody = z.infer<typeof authSchemas.body.login>;
+export type AuthRefreshBody = z.infer<typeof authSchemas.body.refresh>;

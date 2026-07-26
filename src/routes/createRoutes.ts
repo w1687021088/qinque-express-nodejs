@@ -149,6 +149,7 @@ export function createAppRoutes(
     docs.push({
       path: config.path,
       method: config.method,
+      access: config.access,
       schemas: config.schemas
     });
   });

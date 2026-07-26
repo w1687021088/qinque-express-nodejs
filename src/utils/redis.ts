@@ -33,4 +33,6 @@ export const disconnectRedis = async () => {
   }
 };
 
+export const isRedisReady = () => redisClient.isReady;
+
 export default redisClient;

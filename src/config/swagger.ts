@@ -6,6 +6,8 @@ import { AppRoutes, RouteAccess, RouterDoc } from '@/routes/createRoutes.js';
 
 /** Swagger 配置 */
 export const SWAGGER_PATH = '/api-docs';
+/** OpenAPI JSON 文档路径 */
+export const SWAGGER_JSON_PATH = `${SWAGGER_PATH}.json`;
 /** Swagger 服务器地址 */
 export const SWAGGER_SERVER_URL = appEnvConfig.apiUrl || `http://localhost:${appEnvConfig.port}`;
 /** Swagger 标题 */
@@ -156,5 +158,6 @@ export const createSwaggerConfig = (app: express.Express, version: string, all: 
   );
 
   app.use(SWAGGER_PATH, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  app.get(SWAGGER_JSON_PATH, (_request, response) => response.json(swaggerDocument));
   return app;
 };

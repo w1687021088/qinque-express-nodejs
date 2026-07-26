@@ -1,6 +1,7 @@
 import { Snowflake } from '@sapphire/snowflake';
+import { appEnvConfig } from '@/env/index.js';
 
-const epoch = new Date(process.env.SNOWFLAKE_EPOCH || '2026-01-05T00:00:00.000Z');
+const epoch = new Date(appEnvConfig.snowflakeEpoch);
 const snowflake = new Snowflake(epoch);
 
 export const generateSnowflake = () => {

@@ -10,15 +10,14 @@ import { appEnvConfig } from '@/env/index.js';
  */
 const corsOptions: cors.CorsOptions = {
   // 1. 来源控制
-  origin: appEnvConfig.isDev
-    ? '*' // 开发环境允许所有源
-    : appEnvConfig.apiUrl || 'https://yourdomain.com', // 生产环境限制具体域名
+  // credentials 为 true 时不能返回通配来源 *；true 会回显请求来源，仅用于开发环境。
+  origin: appEnvConfig.isDev ? true : appEnvConfig.corsOrigins,
 
   // 2. 允许的 HTTP 方法
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
   // 3. 允许的请求头（前端可携带的 header）
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id'],
 
   // 4. 是否允许携带凭证（如 Cookie）
   credentials: true,

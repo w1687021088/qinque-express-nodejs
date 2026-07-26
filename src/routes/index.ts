@@ -1,5 +1,6 @@
 // src/routes/index.ts
 import express from 'express';
+import { appEnvConfig } from '@/env/index.js';
 import { routeRegistry } from './routeRegistry.js';
 import { createSwaggerConfig } from '@/config/swagger.js';
 
@@ -15,5 +16,9 @@ export const createRouter = (app: express.Express) => {
 
   app.use(version, rootRouter);
 
-  return createSwaggerConfig(app, version, routeRegistry);
+  if (appEnvConfig.swaggerEnabled) {
+    createSwaggerConfig(app, version, routeRegistry);
+  }
+
+  return app;
 };

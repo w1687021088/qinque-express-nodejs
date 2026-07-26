@@ -1,7 +1,7 @@
 // src/middlewares/requestContext.ts
 import { NextFunction, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import logger from '@/utils/logger.js';
+import { runWithRequestContext } from '@/utils/requestContext.js';
 
 export const requestContextMiddleware = (req: Request, res: Response, next: NextFunction) => {
   //  获取请求 ID
@@ -27,7 +27,6 @@ export const requestContextMiddleware = (req: Request, res: Response, next: Next
 
   res.setHeader('X-Request-Id', requestId);
 
-  logger.defaultMeta = { ...logger.defaultMeta, requestId };
-
-  next();
+  // 使用 AsyncLocalStorage 传递请求级日志上下文，避免并发请求污染全局 logger 状态。
+  runWithRequestContext({ requestId }, next);
 };

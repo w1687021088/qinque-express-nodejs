@@ -23,11 +23,15 @@ export const authRouter = createAppRoutes([
   // 刷新token
   {
     path: '/refresh',
-    method: 'get',
+    method: 'post',
+    access: 'public',
     handler: authController.refreshToken,
+    middlewares: [AuthController.validateRefresh],
     schemas: {
       description: '刷新token成功',
-      summary: '刷新token'
+      summary: '刷新token',
+      body: authSchemas.body.refresh,
+      result: authSchemas.result.refresh
     }
   },
   // 注册

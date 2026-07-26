@@ -1,5 +1,4 @@
 // src/app.ts
-import './types/express.d.ts';
 import express from 'express';
 import { createRouter } from '@/routes/index.js';
 import * as appMiddlewares from '@/middlewares/index.js';

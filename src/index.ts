@@ -9,8 +9,9 @@ import { connectRedis } from '@/utils/redis.js';
 import { getLocalIP } from '@/utils/network.js';
 import { SWAGGER_PATH } from '@/config/swagger.js';
 import { appHandleServerEvents } from '@/config/HandleServerEvents.js';
+import { setApplicationReady } from '@/utils/readiness.js';
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = appEnvConfig.port;
 
 /**
  * 启动服务器前的初始化
@@ -26,6 +27,7 @@ async function bootstrap() {
     logger.info('正在连接 Redis...');
     await connectRedis();
     logger.info('Redis 连接成功 ✅');
+    setApplicationReady(true);
 
     // 3. 启动 HTTP 服务器
     const server: Server = app.listen(appEnvConfig.port, () => {
@@ -45,6 +47,7 @@ async function bootstrap() {
 
     appHandleServerEvents(server, PORT);
   } catch (error) {
+    setApplicationReady(false);
     logger.error('应用启动失败:', error);
     process.exit(1);
   }

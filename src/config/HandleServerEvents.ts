@@ -1,9 +1,12 @@
 import { Server } from 'http';
 import logger from '@/utils/logger.js';
 import { disconnectRedis } from '@/utils/redis.js';
+import { setApplicationReady } from '@/utils/readiness.js';
 
 // 服务器事件处理
 export function appHandleServerEvents(server: Server, PORT: number) {
+  let isShuttingDown = false;
+
   // 4. 端口冲突处理
   server.on('error', (error: NodeJS.ErrnoException) => {
     if (error.code === 'EADDRINUSE') {
@@ -17,12 +20,19 @@ export function appHandleServerEvents(server: Server, PORT: number) {
 
   // 5. 优雅关闭（改为 async）
   const gracefulShutdown = async (signal: string) => {
-    logger.info(`\n收到 ${signal} 信号，开始优雅关闭...`);
+    if (isShuttingDown) {
+      return;
+    }
 
-    // 关闭 HTTP 服务器（等待所有连接结束）
-    server.close(() => {
-      logger.info('HTTP 服务器已关闭');
+    isShuttingDown = true;
+    logger.info(`\n收到 ${signal} 信号，开始优雅关闭...`);
+    setApplicationReady(false);
+
+    // 停止接收新连接，并等待现有 HTTP 请求完成。
+    await new Promise<void>((resolve, reject) => {
+      server.close(error => (error ? reject(error) : resolve()));
     });
+    logger.info('HTTP 服务器已关闭');
 
     // 关闭 Redis 连接
     await disconnectRedis();

@@ -28,8 +28,8 @@ export async function testDatabaseConnection() {
     logger.info('✅ 数据库连接成功！');
   } catch (error) {
     logger.error('❌ 数据库连接失败:', error);
-    // 这里可以选择退出进程，避免启动一个“残缺”的服务
-    process.exit(1);
+    // 由启动入口统一记录失败并决定进程退出，避免基础设施工具中断调用栈。
+    throw error;
   }
 }
 

@@ -58,7 +58,7 @@ src/
 
 ## 配置、基础设施与生命周期
 
-- `src/env/` 只加载并校验环境变量；新增必填变量时提供脱敏的 `.env.example`，不提交真实 `.env.*` 凭据。
+- `src/env/` 只加载并校验环境变量；新增必填变量时更新脱敏的 `.env.example`，不提交真实 `.env.*` 凭据。
 - 环境配置在启动时一次性解析、类型化并校验；业务模块通过配置/客户端依赖使用它，不直接散读 `process.env`。
 - MySQL、Redis 等客户端由基础设施层集中创建，必须配置超时、错误监听和关闭方法。启动失败应向上抛给入口统一处理，不要在工具模块内 `process.exit()`。
 - 启动顺序为：加载并校验配置 → 初始化基础设施 → 启动 HTTP 服务。关闭顺序为：停止接收新请求 → 等待或超时关闭 HTTP 连接 → 关闭 Redis、数据库等依赖 → 退出进程。
@@ -88,7 +88,7 @@ src/
 - `npm run lint` / `npm run lint:fix`：检查或修复 ESLint 问题。
 - `npm run format:check` / `npm run format`：检查或写入 Prettier 格式。
 - `npm run build`：编译到 `dist/`；`npm start`：运行编译产物。
-- 当前尚未配置自动化测试。涉及业务规则、鉴权、错误处理、repository 查询或中间件变更时，应优先补充模块附近的单元/集成测试，并在 `package.json` 中提供可重复执行的测试脚本。
+- 使用 Vitest 与 Supertest 编写测试；路由集成测试位于 `src/routes/*.integration.test.ts`，不连接真实外部依赖。涉及业务规则、鉴权、错误处理、repository 查询或中间件变更时，应补充模块附近的单元/集成测试。
 - 每次提交前至少运行与改动相称的验证；通常为 `npm run type-check`、`npm run lint`、`npm run format:check` 和 `npm run build`。若因环境依赖无法运行，必须在交付说明中写明原因。
 
 ## 提交与评审要求

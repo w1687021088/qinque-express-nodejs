@@ -26,7 +26,7 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
 
   // 2. 校验 token
   try {
-    req.user = jwtConfig.verify(token);
+    req.user = jwtConfig.verifyAccessToken(token);
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

@@ -2,11 +2,22 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import { appEnvConfig } from '@/env/index.js';
+import { getRequestLogContext } from '@/utils/requestContext.js';
 
 // 自定义格式
 const myFormat = winston.format.printf(({ timestamp, level, message, ...meta }) => {
-  const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+  const requestContext = getRequestLogContext();
+  const contextMeta = requestContext ? { requestId: requestContext.requestId, ...meta } : meta;
+  const metaStr = Object.keys(contextMeta).length ? ` ${JSON.stringify(contextMeta)}` : '';
   return `${timestamp} [${level}]: ${message}${metaStr}`;
+});
+
+const requestContextFormat = winston.format(info => {
+  const requestContext = getRequestLogContext();
+  if (requestContext?.requestId && !info.requestId) {
+    info.requestId = requestContext.requestId;
+  }
+  return info;
 });
 
 // 创建 logger
@@ -16,6 +27,7 @@ const logger = winston.createLogger({
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
+    requestContextFormat(),
     // 开发环境用彩色易读格式，生产用 JSON
     appEnvConfig.isDev ? winston.format.combine(winston.format.colorize(), myFormat) : winston.format.json()
   ),
@@ -34,7 +46,7 @@ if (!appEnvConfig.isDev) {
     datePattern: 'YYYY-MM-DD',
     maxSize: '20m',
     maxFiles: '14d',
-    format: winston.format.combine(winston.format.timestamp(), winston.format.json())
+    format: winston.format.combine(winston.format.timestamp(), requestContextFormat(), winston.format.json())
   });
 
   // 错误日志（单独存储）
@@ -44,7 +56,7 @@ if (!appEnvConfig.isDev) {
     maxSize: '20m',
     maxFiles: '30d',
     level: 'error',
-    format: winston.format.combine(winston.format.timestamp(), winston.format.json())
+    format: winston.format.combine(winston.format.timestamp(), requestContextFormat(), winston.format.json())
   });
 
   logger.add(allLogsTransport);
