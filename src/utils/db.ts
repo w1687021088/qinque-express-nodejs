@@ -2,8 +2,10 @@ import mysql from 'mysql2/promise';
 import { appEnvConfig } from '@/env/index.js';
 import logger from '@/utils/logger.js';
 
+// 从环境变量中获取数据库配置
 const mysqlDB = appEnvConfig.mysqlDB;
 
+// 创建数据库连接池
 const pool = mysql.createPool({
   host: mysqlDB.host,
   user: mysqlDB.user,
@@ -17,7 +19,7 @@ const pool = mysql.createPool({
 
 export default pool;
 
-// 🆕 新增：测试数据库连接的方法
+// 试数据库连接的方法
 export async function testDatabaseConnection() {
   try {
     const connection = await pool.getConnection();
@@ -32,25 +34,3 @@ export async function testDatabaseConnection() {
 }
 
 export type DBExecuteRowData<T extends Record<string, any>> = Array<mysql.RowDataPacket & T>;
-
-// // 用户表
-// const tables = {
-//   user: 'dake_users',
-//   article: 'dake_articles'
-// } as const;
-//
-// type TableKey = keyof typeof tables;
-// export class DB {
-//   select = (tableKey: TableKey, column: string[], where?: any[]) => {
-//     let s = 'SELECT ';
-//     for (let i = 0; i < column.length; i++) {
-//       s += column[i];
-//       if (i < column.length - 1) {
-//         s += ', ';
-//       }
-//     }
-//     const sql = s + ' FROM ' + tables[tableKey]; // + where 的逻辑
-//
-//     return sql;
-//   };
-// }

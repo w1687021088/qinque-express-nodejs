@@ -1,32 +1,101 @@
 import { z } from 'zod';
 import swaggerUi from 'swagger-ui-express';
-import { AppRoutes } from '@/routes/create-routes.js';
+import { AppRoutes } from '@/routes/createRoutes.js';
 import express from 'express';
 
+/**
+ * Swagger 配置
+ * */
+export const SWAGGER_PATH = '/api-docs';
+
+/**
+ * Swagger 服务器地址
+ * */
+export const SWAGGER_SERVER_URL = 'http://localhost:3000';
+
+/**
+ * Swagger 标题
+ * */
+export const SWAGGER_TITLE = 'API Docs';
+
+/**
+ * Swagger OpenAPI 规范版本
+ * */
+
+export const SWAGGER_OPEN_API_VERSION = '3.0.0';
+
+/**
+ * Swagger 描述
+ * */
+export const SWAGGER_DESCRIPTION = 'API Documentation';
+
 type SwaggerPath = {
-  // 请求方法
+  /**
+   * 请求方法
+   * */
   summary: string;
+  /**
+   * 请求参数
+   * */
   requestBody?: RequestBody;
+  /**
+   * 请求参数
+   * */
   parameters?: Parameters;
+  /**
+   * 响应结果
+   * */
   responses?: Record<string, Responses>;
 };
 
 type Parameters = Array<{
+  /**
+   * 参数名称
+   * */
   name: string;
+  /**
+   * 参数位置
+   * */
   in: 'path' | 'query' | 'header';
+  /**
+   * 是否必填
+   * */
   required?: boolean;
+  /**
+   * 参数类型
+   * */
   schema: any;
+  /**
+   * 参数描述
+   * */
   description?: string;
 }>;
 
 type RequestBody = {
+  /**
+   * 是否必填
+   * */
   required?: boolean;
+  /**
+   * 请求体内容
+   * */
   content?: Record<string, { schema: ReturnType<typeof createBodySchema> }>;
 };
 
 type Responses = {
+  /**
+   * 响应状态码
+   * */
   description: string;
+  /**
+   * 响应内容
+   * */
   content: Record<string, { schema: ReturnType<typeof createResultSchema> }>;
+};
+
+type Tag = {
+  name: string;
+  description: string;
 };
 
 export type SwaggerPaths = {
@@ -59,24 +128,19 @@ const zodToParams = (schema: z.ZodObject<any>, location: 'path' | 'query' | 'hea
 
 /**
  * 创建 Swagger 文档
- * @param version
- * @param paths
- * @param tags
+ * @param version 版本
+ * @param paths 路径
+ * @param tags 标签 用于分组
  * @returns
  */
-
-const createSwaggerDocument = (
-  version: string,
-  paths?: SwaggerPaths,
-  tags: Array<{ name: string; description: string }> = []
-) => ({
-  openapi: '3.0.0',
+const createSwaggerDocument = (version: string, paths?: SwaggerPaths, tags: Array<Tag> = []) => ({
+  openapi: SWAGGER_OPEN_API_VERSION,
   info: {
-    title: 'My API',
+    title: SWAGGER_TITLE,
     version: '1.0.0',
-    description: 'API 文档（手动定义）'
+    description: SWAGGER_DESCRIPTION
   },
-  servers: [{ url: `http://localhost:3000${version}` }],
+  servers: [{ url: `${SWAGGER_SERVER_URL + version}` }],
   tags,
   paths: paths ?? {}
 });
@@ -90,7 +154,7 @@ const createBodySchema = (bodySchema: z.ZodObject) => z.toJSONSchema(bodySchema)
 
 /**
  * 创建结果 schema
- * @param dataSchema
+ * @param dataSchema 数据 schema
  * @returns
  */
 const createResultSchema = (dataSchema: z.ZodObject) =>
@@ -106,12 +170,12 @@ const createResultSchema = (dataSchema: z.ZodObject) =>
 
 /**
  * 创建 Swagger 配置
- * @param app
- * @param version
- * @param all
+ * @param app 应用
+ * @param version 版本
+ * @param all 所有路由
  * @returns
  */
-const createSwaggerConfig = (app: express.Express, version: string, all: AppRoutes) => {
+export const createSwaggerConfig = (app: express.Express, version: string, all: AppRoutes) => {
   const paths: SwaggerPaths = {};
 
   all.forEach(item => {
@@ -140,7 +204,7 @@ const createSwaggerConfig = (app: express.Express, version: string, all: AppRout
           }
         : undefined;
 
-      // 响应
+      // 响应，默认 200
       const responses = doc?.schemas?.result
         ? {
             '200': {
@@ -166,16 +230,7 @@ const createSwaggerConfig = (app: express.Express, version: string, all: AppRout
     all.map(item => ({ name: item.path.replace('/', ''), description: item.description || '' }))
   );
 
-  // console.log('📦 生成的 Swagger Paths:', JSON.stringify(swaggerDocument, null, 2));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  app.use(SWAGGER_PATH, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   return app;
-};
-
-export const swaggerConfig = {
-  zodToParams,
-  createSwaggerDocument,
-  createBodySchema,
-  createResultSchema,
-  createSwaggerConfig
 };

@@ -1,12 +1,11 @@
 // src/modules/user/user.route.ts
 import { UserController } from './user.controller.js';
-import { createAppRoutes } from '@/routes/create-routes.js';
+import { createAppRoutes } from '@/routes/createRoutes.js';
 import { userSchemas } from '@/modules/user/user.schema.js';
 
 // 路由枚举
 enum UserPathEnum {
-  INFO = '/info',
-  ADDED = '/added'
+  INFO = '/info'
 }
 
 // 实例化控制器

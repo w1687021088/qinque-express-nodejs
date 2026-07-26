@@ -1,6 +1,6 @@
 // src/routes/publicConfig.ts
 import { authRouter } from '@/modules/auth/auth.route.js';
-import { AppRoutes } from '@/routes/create-routes.js';
+import { AppRoutes } from '@/routes/createRoutes.js';
 
 export const publicConfigRoutes: AppRoutes = [
   {

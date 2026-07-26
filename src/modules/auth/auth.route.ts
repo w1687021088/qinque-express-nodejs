@@ -1,5 +1,5 @@
 // src/modules/auth/auth.route.ts
-import { AppRoutes, createAppRoutes } from '@/routes/create-routes.js';
+import { createAppRoutes } from '@/routes/createRoutes.js';
 import { AuthController } from './auth.controller.js';
 import { authMiddleware } from '@/middlewares/auth.js';
 import { authSchemas } from '@/modules/auth/auth.schema.js';

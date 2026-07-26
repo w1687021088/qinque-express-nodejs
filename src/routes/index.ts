@@ -3,7 +3,7 @@ import express from 'express';
 import { authMiddleware } from '@/middlewares/auth.js';
 import { configRoutes } from './config.js';
 import { publicConfigRoutes } from './publicConfig.js';
-import { swaggerConfig } from '@/config/swagger.js';
+import { createSwaggerConfig } from '@/config/swagger.js';
 
 const rootRouter = express.Router();
 
@@ -25,5 +25,7 @@ export const createRouter = (app: express.Express) => {
 
   app.use(version, rootRouter);
 
-  return swaggerConfig.createSwaggerConfig(app, version, [...publicConfigRoutes, ...configRoutes]);
+  const allRoutes = [...publicConfigRoutes, ...configRoutes];
+
+  return createSwaggerConfig(app, version, allRoutes);
 };

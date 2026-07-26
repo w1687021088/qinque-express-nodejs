@@ -1,6 +1,6 @@
 // src/routes/config.ts
 import { userRouter } from '@/modules/user/user.route.js';
-import { AppRoutes } from '@/routes/create-routes.js';
+import { AppRoutes } from '@/routes/createRoutes.js';
 
 enum RouterPathEnum {
   /**

@@ -1,15 +1,16 @@
 // src/index.ts
-import './env/index.js';
+import { appEnvConfig } from './env/index.js';
 import { app } from './app.js';
 import { Server } from 'http';
 import { testDatabaseConnection } from '@/utils/db.js';
 import logger from '@/utils/logger.js';
 import { EnvEnums } from '@/enums/index.js';
-import { connectRedis, disconnectRedis } from '@/utils/redis.js';
-import { getLocalIP } from '@/utils/network.js'; // 引入 disconnectRedis
+import { connectRedis } from '@/utils/redis.js';
+import { getLocalIP } from '@/utils/network.js';
+import { SWAGGER_PATH } from '@/config/swagger.js';
+import { appHandleServerEvents } from '@/config/HandleServerEvents.js';
 
 const PORT = Number(process.env.PORT) || 3000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
 /**
  * 启动服务器前的初始化
@@ -27,59 +28,22 @@ async function bootstrap() {
     logger.info('Redis 连接成功 ✅');
 
     // 3. 启动 HTTP 服务器
-    const server: Server = app.listen(PORT, () => {
+    const server: Server = app.listen(appEnvConfig.port, () => {
       logger.info(`服务器正在运行...`);
       logger.info(`🚀 服务器启动成功`);
-      logger.info(`📍 环境: ${NODE_ENV}`);
-      // 开发环境显示本机 IP，否则显示 localhost
-      const host = NODE_ENV === EnvEnums.dev ? getLocalIP() : 'localhost';
-      logger.info(`🔗 地址: http://${host}:${PORT}`);
+      logger.info(`📍 环境: ${appEnvConfig.env}`);
+      if (appEnvConfig.env === EnvEnums.dev) {
+        // 开发环境显示本机 IP，否则显示 localhost
+        const host = appEnvConfig.env === EnvEnums.dev ? getLocalIP() : 'localhost';
+        logger.info(`🔗 地址: http://${host}:${PORT}`);
+      }
 
-      if (NODE_ENV === EnvEnums.dev) {
-        logger.info(`📚 API 文档: http://localhost:${PORT}/api-docs`);
+      if (appEnvConfig.env === EnvEnums.dev || appEnvConfig.env === EnvEnums.sit) {
+        logger.info(`📚 API 文档: ${appEnvConfig.apiUrl + SWAGGER_PATH}`);
       }
     });
 
-    // 4. 端口冲突处理
-    server.on('error', (error: NodeJS.ErrnoException) => {
-      if (error.code === 'EADDRINUSE') {
-        logger.error(`❌ 端口 ${PORT} 已被占用，请使用其他端口`);
-        process.exit(1);
-      } else {
-        logger.error('服务器启动失败:', error);
-        process.exit(1);
-      }
-    });
-
-    // 5. 优雅关闭（改为 async）
-    const gracefulShutdown = async (signal: string) => {
-      logger.info(`\n收到 ${signal} 信号，开始优雅关闭...`);
-
-      // 关闭 HTTP 服务器（等待所有连接结束）
-      server.close(() => {
-        logger.info('HTTP 服务器已关闭');
-      });
-
-      // 关闭 Redis 连接
-      await disconnectRedis();
-
-      // 退出进程
-      logger.info('进程退出');
-      process.exit(0);
-    };
-
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-
-    // 6. 进程级异常捕获（兜底）
-    process.on('unhandledRejection', (reason, promise) => {
-      logger.error('未处理的 Promise 拒绝:', { reason, promise });
-    });
-
-    process.on('uncaughtException', error => {
-      logger.error('未捕获的异常:', error);
-      process.exit(1);
-    });
+    appHandleServerEvents(server, PORT);
   } catch (error) {
     logger.error('应用启动失败:', error);
     process.exit(1);
