@@ -14,7 +14,7 @@ export enum AuthErrorCode {
    */
   NOT_LOGGED_IN = 10001,
   /**
-   * Token 已过期，请重新登录
+   * 异常
    */
   TOKEN_EXPIRED = 10002,
   /**
