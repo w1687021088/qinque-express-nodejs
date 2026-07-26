@@ -93,29 +93,44 @@ if (parsedEnv.NODE_ENV === EnvEnums.prod && !parsedEnv.CORS_ORIGINS) {
  * 除本文件外，业务与基础设施代码不得直接读取 process.env。
  */
 export const appEnvConfig = {
+  // 当前环境
   env: parsedEnv.NODE_ENV,
+  // 应用名称
   appName: parsedEnv.APP_NAME,
+  // 端口号
   port: parsedEnv.PORT,
+  // API 地址
   apiUrl: parsedEnv.API_URL,
+  // 日志级别
   logLevel: parsedEnv.LOG_LEVEL,
+  // 是否启用 Swagger
   swaggerEnabled: parsedEnv.SWAGGER_ENABLED,
+  // 允许的跨域来源
   corsOrigins: parsedEnv.CORS_ORIGINS.split(',')
     .map(origin => origin.trim())
     .filter(Boolean),
   jwt: {
+    // 访问令牌的秘密
     secret: parsedEnv.JWT_SECRET,
+    // 访问令牌的有效期
     expiresIn: parsedEnv.JWT_EXPIRES_IN,
     // 兼容已有环境配置；新增或轮换配置时应使用独立的 JWT_REFRESH_SECRET。
     refreshSecret: parsedEnv.JWT_REFRESH_SECRET || parsedEnv.JWT_SECRET,
+    // 刷新令牌的有效期
     refreshExpiresIn: parsedEnv.JWT_REFRESH_EXPIRES_IN,
+    // 刷新令牌的剩余有效秒数
     refreshExpiresInSeconds: durationToSeconds(parsedEnv.JWT_REFRESH_EXPIRES_IN),
+    // 是否使用了 JWT_REFRESH_SECRET 作为回退
     isUsingRefreshSecretFallback: !parsedEnv.JWT_REFRESH_SECRET
   },
+  // 雪花算法的起始时间
   snowflakeEpoch: parsedEnv.SNOWFLAKE_EPOCH,
+  // Redis 配置
   redis: {
     host: parsedEnv.REDIS_HOST,
     port: parsedEnv.REDIS_PORT
   },
+  // MySQL 数据库配置
   mysqlDB: {
     host: parsedEnv.DB_HOST,
     port: parsedEnv.DB_PORT,
@@ -124,8 +139,12 @@ export const appEnvConfig = {
     database: parsedEnv.DB_NAME,
     name: parsedEnv.DB_NAME
   },
+  // 是否开发环境
   isDev,
+  // 是否 QA 环境
   isQa: parsedEnv.NODE_ENV === EnvEnums.qa,
+  // 是否测试环境
   isSit: parsedEnv.NODE_ENV === EnvEnums.sit,
+  // 是否生产环境
   isProd: parsedEnv.NODE_ENV === EnvEnums.prod
 } as const;

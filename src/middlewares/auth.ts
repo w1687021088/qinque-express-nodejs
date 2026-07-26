@@ -7,8 +7,6 @@ import { HttpCodeEnum } from '@/enums/code/http-code.js';
 import { jwtConfig } from '@/config/jwtConfig.js';
 import redisClient from '@/utils/redis.js';
 
-const accessTokenBlocklistKeyPrefix = 'auth:access-token:blocklist:';
-
 /**
  * JWT 认证中间件
  * 验证 token，将用户信息挂载到 req.user
@@ -29,19 +27,22 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
 
   // 2. 校验 token
   try {
+    // 2.1 验证 token， 如果未过期
     const user = jwtConfig.verifyAccessToken(token);
-    const isBlocked = await redisClient.exists(`${accessTokenBlocklistKeyPrefix}${user.tokenId}`);
+    // 2.2 验证 token 是否在黑名单中
+    const isBlocked = await redisClient.exists(jwtConfig.accessTokenBlocklistKeyPrefix(user.userId));
+    // 2.3 如果在黑名单中，拒绝请求
     if (isBlocked) {
       return next(new BusinessError(APP_ENUMS.Auth.AUTH_FAILED, '登录状态已失效', HttpCodeEnum.UNAUTHORIZED));
     }
-
+    // 2.4 将用户信息挂载到 req.user
     req.user = user;
     next();
   } catch (error) {
+    // 2.4 token 验证异常处理
     if (error instanceof jwt.TokenExpiredError) {
-      return next(new BusinessError(APP_ENUMS.Auth.TOKEN_EXPIRED, null, HttpCodeEnum.UNAUTHORIZED));
+      return next(new BusinessError(APP_ENUMS.Auth.AUTH_FAILED, 'Token已过期，请重新登录', HttpCodeEnum.UNAUTHORIZED));
     }
-    // logger.error('JWT 校验异常', { error });
-    return next(new BusinessError(APP_ENUMS.Auth.AUTH_FAILED, null, HttpCodeEnum.UNAUTHORIZED));
+    return next(new BusinessError(APP_ENUMS.Auth.TOKEN_EXPIRED, 'Token 异常', HttpCodeEnum.UNAUTHORIZED));
   }
 };

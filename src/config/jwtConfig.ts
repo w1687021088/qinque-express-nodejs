@@ -1,14 +1,17 @@
+// src/config/jwtConfig.ts
 import jwt from 'jsonwebtoken';
 import { appEnvConfig } from '@/env/index.js';
 
 export type AccessTokenPayload = { userId: string; tokenId: string };
 export type RefreshTokenPayload = AccessTokenPayload & { tokenId: string };
 
+/** 生成 access token */
 const signAccessToken = (payload: AccessTokenPayload) =>
   jwt.sign(payload, appEnvConfig.jwt.secret, {
     expiresIn: appEnvConfig.jwt.expiresIn
   } as jwt.SignOptions);
 
+/** 验证 access token */
 const verifyAccessToken = (token: string) => jwt.verify(token, appEnvConfig.jwt.secret) as AccessTokenPayload;
 
 /** 返回 access token 的剩余有效秒数，用于登出黑名单的 TTL。 */
@@ -21,19 +24,27 @@ const getAccessTokenRemainingSeconds = (token: string) => {
   return Math.max(0, decoded.exp - Math.floor(Date.now() / 1000));
 };
 
+/** 生成 refresh token */
 const signRefreshToken = (payload: RefreshTokenPayload) =>
   jwt.sign(payload, appEnvConfig.jwt.refreshSecret, {
     expiresIn: appEnvConfig.jwt.refreshExpiresIn,
     audience: 'refresh'
   } as jwt.SignOptions);
 
+/** 验证 refresh token */
 const verifyRefreshToken = (token: string) =>
   jwt.verify(token, appEnvConfig.jwt.refreshSecret, { audience: 'refresh' }) as RefreshTokenPayload;
+
+const accessTokenBlocklistKeyPrefix = (userId: string) => `auth:access-token:blocklist:${userId}`;
+
+const refreshTokenKeyPrefix = (userId: string) => `auth:refresh-token:${userId}`;
 
 export const jwtConfig = {
   signAccessToken,
   verifyAccessToken,
   getAccessTokenRemainingSeconds,
   signRefreshToken,
-  verifyRefreshToken
+  verifyRefreshToken,
+  refreshTokenKeyPrefix,
+  accessTokenBlocklistKeyPrefix
 };

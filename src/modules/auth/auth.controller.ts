@@ -24,35 +24,31 @@ export class AuthController extends Controller {
   private _queryUserExists = async (phone: string) => {
     return this._service.queryUserExists(phone);
   };
-  private readonly refreshTokenKeyPrefix = 'auth:refresh-token:';
-  private readonly accessTokenBlocklistKeyPrefix = 'auth:access-token:blocklist:';
 
   /** 创建并持久化一次性 refresh token 会话，刷新后旧会话立即失效。 */
   private createTokenPair = async (userId: string) => {
+    // 生成 refresh token
     const tokenId = randomUUID();
+    // 生成 access token
     const refreshToken = jwtConfig.signRefreshToken({ userId, tokenId });
-    await redisClient.set(`${this.refreshTokenKeyPrefix}${tokenId}`, userId, {
+    // 持久化 refresh token
+    await redisClient.set(jwtConfig.refreshTokenKeyPrefix(tokenId), userId, {
       EX: appEnvConfig.jwt.refreshExpiresInSeconds
     });
 
+    // 生成 access token
     return {
       token: jwtConfig.signAccessToken({ userId, tokenId }),
       refreshToken
     };
   };
-  /**
-   * 注册参数验证
-   * */
+  /** 注册参数验证*/
   static validateRegister = validateMiddleware({ body: authSchemas.body.register });
-  /**
-   * 登录参数验证
-   * */
+  /** 登录参数验证*/
   static validateLogin = validateMiddleware({ body: authSchemas.body.login });
   /** 刷新令牌参数验证 */
   static validateRefresh = validateMiddleware({ body: authSchemas.body.refresh });
-  /**
-   * 删除
-   * */
+  /** 删除* */
   static validateDelete = validateMiddleware({ params: authSchemas.params.delete });
 
   /**
@@ -69,6 +65,8 @@ export class AuthController extends Controller {
     if (!data) {
       return this.fail(APP_ENUMS.Auth.USER_NOT_FOUND_PHONE);
     }
+
+    // 提取密码和用户信息
     const { password, ...result } = data;
 
     // 验证密码
@@ -138,15 +136,18 @@ export class AuthController extends Controller {
       return this.fail(APP_ENUMS.Auth.AUTH_FAILED, '登录状态无效', HttpCodeEnum.UNAUTHORIZED);
     }
 
+    // 获取 access token 剩余有效期
     const remainingSeconds = jwtConfig.getAccessTokenRemainingSeconds(token);
+
+    // 如果 access token 未过期，加入到黑名单，过期时间就是 access token 的剩余有效期
     if (remainingSeconds > 0) {
-      await redisClient.set(`${this.accessTokenBlocklistKeyPrefix}${tokenId}`, '1', { EX: remainingSeconds });
+      await redisClient.set(jwtConfig.accessTokenBlocklistKeyPrefix(tokenId), '1', { EX: remainingSeconds });
     }
 
-    // access token 与 refresh token 共享 tokenId，删除 refresh 会话可阻止旧令牌继续换取新令牌。
-    await redisClient.del(`${this.refreshTokenKeyPrefix}${tokenId}`);
+    // 删除 refresh token
+    await redisClient.del(jwtConfig.refreshTokenKeyPrefix(tokenId));
 
-    return this.success(response, { message: '登出成功' });
+    return this.success(response, null, '登出成功');
   };
   /**
    * 刷新 token
@@ -158,8 +159,11 @@ export class AuthController extends Controller {
 
     try {
       const { userId, tokenId } = jwtConfig.verifyRefreshToken(refreshToken);
-      const storedUserId = await redisClient.getDel(`${this.refreshTokenKeyPrefix}${tokenId}`);
 
+      // 从 Redis 获取并删除 refresh token
+      const storedUserId = await redisClient.getDel(jwtConfig.refreshTokenKeyPrefix(tokenId));
+
+      // 如果 refresh token 不存在或已过期
       if (storedUserId !== userId) {
         return this.fail(APP_ENUMS.Auth.AUTH_FAILED, '刷新令牌已失效', HttpCodeEnum.UNAUTHORIZED);
       }
