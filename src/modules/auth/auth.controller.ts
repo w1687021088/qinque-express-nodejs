@@ -25,6 +25,7 @@ export class AuthController extends Controller {
     return this._service.queryUserExists(phone);
   };
   private readonly refreshTokenKeyPrefix = 'auth:refresh-token:';
+  private readonly accessTokenBlocklistKeyPrefix = 'auth:access-token:blocklist:';
 
   /** 创建并持久化一次性 refresh token 会话，刷新后旧会话立即失效。 */
   private createTokenPair = async (userId: string) => {
@@ -35,7 +36,7 @@ export class AuthController extends Controller {
     });
 
     return {
-      token: jwtConfig.signAccessToken({ userId }),
+      token: jwtConfig.signAccessToken({ userId, tokenId }),
       refreshToken
     };
   };
@@ -129,7 +130,24 @@ export class AuthController extends Controller {
    * @param request - 请求对象
    * @param response - 响应对象
    * */
-  logout = async () => {};
+  logout = async (request: Request, response: Response) => {
+    const token = request.headers.authorization?.slice('Bearer '.length);
+    const tokenId = request.user?.tokenId;
+
+    if (!token || !tokenId) {
+      return this.fail(APP_ENUMS.Auth.AUTH_FAILED, '登录状态无效', HttpCodeEnum.UNAUTHORIZED);
+    }
+
+    const remainingSeconds = jwtConfig.getAccessTokenRemainingSeconds(token);
+    if (remainingSeconds > 0) {
+      await redisClient.set(`${this.accessTokenBlocklistKeyPrefix}${tokenId}`, '1', { EX: remainingSeconds });
+    }
+
+    // access token 与 refresh token 共享 tokenId，删除 refresh 会话可阻止旧令牌继续换取新令牌。
+    await redisClient.del(`${this.refreshTokenKeyPrefix}${tokenId}`);
+
+    return this.success(response, { message: '登出成功' });
+  };
   /**
    * 刷新 token
    * @param request - 请求对象

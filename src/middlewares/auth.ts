@@ -5,12 +5,15 @@ import { BusinessError } from '@/utils/error.js';
 import { APP_ENUMS } from '@/enums/index.js';
 import { HttpCodeEnum } from '@/enums/code/http-code.js';
 import { jwtConfig } from '@/config/jwtConfig.js';
+import redisClient from '@/utils/redis.js';
+
+const accessTokenBlocklistKeyPrefix = 'auth:access-token:blocklist:';
 
 /**
  * JWT 认证中间件
  * 验证 token，将用户信息挂载到 req.user
  */
-export const authMiddleware = (req: Request, _res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   // 1. 从 Authorization 头提取 token
   const authHeader = req.headers.authorization;
   // 1.1 没有 Authorization 头
@@ -26,7 +29,13 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
 
   // 2. 校验 token
   try {
-    req.user = jwtConfig.verifyAccessToken(token);
+    const user = jwtConfig.verifyAccessToken(token);
+    const isBlocked = await redisClient.exists(`${accessTokenBlocklistKeyPrefix}${user.tokenId}`);
+    if (isBlocked) {
+      return next(new BusinessError(APP_ENUMS.Auth.AUTH_FAILED, '登录状态已失效', HttpCodeEnum.UNAUTHORIZED));
+    }
+
+    req.user = user;
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

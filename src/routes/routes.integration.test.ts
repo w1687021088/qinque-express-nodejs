@@ -21,6 +21,12 @@ describe('路由访问策略与运行状态', () => {
     expect(response.status).toBe(401);
   });
 
+  it('登出接口需要有效访问令牌', async () => {
+    const response = await request(app).post('/api/v1/auth/logout');
+
+    expect(response.status).toBe(401);
+  });
+
   it('刷新接口是公开端点且会校验 refreshToken 参数', async () => {
     const response = await request(app).post('/api/v1/auth/refresh').send({});
 
